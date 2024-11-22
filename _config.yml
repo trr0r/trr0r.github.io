@@ -26,20 +26,20 @@ description: >- # used by seo meta and the atom feed
 url: "https://trr0r.github.io"
 
 github:
-  username: github_username # change to your GitHub username
+  username: Trr0r # change to your GitHub username
 
 twitter:
-  username: twitter_username # change to your Twitter username
+  username: Trr0r_ # change to your Twitter username
 
 social:
   # Change to your full name.
   # It will be displayed as the default author of the posts and the copyright owner in the Footer
-  name: your_full_name
-  email: example@domain.com # change to your email address
+  name: Trr0r
+  email: terroraterrador@gmail.com # change to your email address
   links:
     # The first element serves as the copyright owner's link
-    - https://twitter.com/username # change to your Twitter homepage
-    - https://github.com/username # change to your GitHub homepage
+    - https://x.com/Trr0r_ # change to your Twitter homepage
+    - https://github.com/Trr0r # change to your GitHub homepage
     # Uncomment below to add more social links
     # - https://www.facebook.com/username
     # - https://www.linkedin.com/in/username
