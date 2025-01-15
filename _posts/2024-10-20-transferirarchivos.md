@@ -8,14 +8,14 @@ description: Formas de transferirnos los archivos a nuestra máquina atacante a 
 
 ## Definición
 
-> Cuando hemos ganado acceso a la máquina víctima es posible que llegue el momento en cual debemos transferirnos archivos a la máquina víctima para aplicar un mayor reconocimiento dentro de esta y así poder aplicar Técnicas de escala de privilegios (Linux), para que dicho proceso de Transferencia sea más sencillo he creado el siguiente recurso el cual recoge los principales métodos de transferencia para máquina Linux.
+Cuando hemos ganado acceso a la máquina víctima es posible que llegue el momento en cual debemos transferirnos archivos a la máquina víctima para aplicar un mayor reconocimiento dentro de esta y así poder aplicar Técnicas de escala de privilegios (Linux), para que dicho proceso de Transferencia sea más sencillo he creado el siguiente recurso el cual recoge los principales métodos de transferencia para máquina Linux.
 > 
-> *Accediendo al siguiente recurso podemos encontrar de manera más detallada dichas Transferencias de archivos <a href="https://ironhackers.es/en/cheatsheet/transferir-archivos-post-explotacion-cheatsheet/" target="_blank">IronHackers</a>*.
+> *Accediendo al siguiente recurso podemos encontrar de forma más información sobre las transferencias de archivos <a href="https://ironhackers.es/en/cheatsheet/transferir-archivos-post-explotacion-cheatsheet/" target="_blank">IronHackers</a>*.
 
 ___
 ## Tipos
 
-> *Cuando no se especifique el caso del **Atacante** será porque se puede hacer con un simple servidor **HTTP**, ya sea con **python**, **php** o de cualquier otra forma.*
+> *Cuando no se especifique el caso del **Atacante** será porque se puede hacer con un simple servidor **HTTP**, ya sea con **python**, **php** o de cualquier otra forma. Véase <a href="#">Servidores HTTP</a>.*
 
 ### Wget
 #### Víctima
