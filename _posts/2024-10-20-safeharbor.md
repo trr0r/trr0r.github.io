@@ -2,7 +2,7 @@
 title: "SafeHarbor"
 date: 2024-10-20 00:00:00 +0800
 categories: writeups vulnhub
-tags: infoleak inyeccionsql docker pivoting searchsploit writeup vulnhub
+tags: infoleak inyeccionsql docker pivoting searchsploit writeup vulnhub linux
 description: Writeup de la máquina SafeHarbor de Vulnhub.
 ---
 

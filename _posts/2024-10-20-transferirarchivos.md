@@ -2,7 +2,7 @@
 title: "Transferir Archivos (Linux)"
 date: 2024-10-20 00:00:00 +0800
 categories: cheatsheets
-tags: privesc
+tags: privesc linux
 description: Formas de transferirnos los archivos a nuestra máquina atacante a través de la máquina víctima y viceversa en Linux.
 ---
 
