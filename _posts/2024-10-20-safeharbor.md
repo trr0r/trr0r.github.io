@@ -4,7 +4,7 @@ date: 2024-10-20 00:00:00 +0800
 categories: writeups vulnhub
 tags: infoleak inyeccionsql docker pivoting searchsploit writeup vulnhub linux
 description: Writeup de la máquina SafeHarbor de Vulnhub.
-image: ../assets/images/posts/2024-10-20-safeharbor/vulnhub.jpg
+image: ../assets/images/posts/logos/vulnhub.jpg
 ---
 
 
