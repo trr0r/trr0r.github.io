@@ -7,7 +7,14 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
 ---
 
 ## Autopwned
-<a href="../assets/files/autopwneds/2025-23-16-tokenofhate.py" target="_blank">transferimos</a>
+
+<details>
+  <summary>Haz clic para expandir</summary>
+  
+  Aquí va el contenido largo o adicional que se ocultará por defecto.
+  Puedes agregar cualquier texto, imágenes, tablas, etc., que quieras mostrar solo cuando el usuario haga clic en el botón de expandir.
+
+</details>
 
 ---
 ## Resumen de la resolución
