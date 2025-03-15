@@ -7,7 +7,8 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
 ---
 
 ## Autopwned
-[tokenofhate_autowpned.py](../assets/files/autopwneds/2025-23-16-tokenofhate.py)
+<a href="../assets/files/autopwneds/2025-23-16-tokenofhate.py" target="_blank">transferimos</a>
+
 ---
 ## Resumen de la resolución
 
