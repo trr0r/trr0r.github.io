@@ -9,7 +9,7 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
 ## Autopwned
 
 <details>
-  <summary>Haz click para ver el script autopwned para Token Of Hate</summary>
+  <summary>Haz click para ver el autopwned</summary>
   
  ```python
  #!/usr/bin/env python3
