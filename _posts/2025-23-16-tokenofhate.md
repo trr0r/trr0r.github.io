@@ -4,6 +4,7 @@ date: 2025-03-16 00:00:00 +0800
 categories: writeups thehackerslabs
 tags: autopwn máquina linux cookiehijacking jwt capabilities rce xss ssrf lfi javascript scripting apiabuse api
 description: Writeup de la máquina Token Of Hate de TheHackersLabs.
+image: ../assets/images/posts/logos/thehackerslabs.png
 ---
 
 ## Autopwned
