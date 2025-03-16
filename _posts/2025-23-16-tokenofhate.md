@@ -20,7 +20,7 @@ image: ../assets/images/posts/logos/thehackerslabs.png
       <code>
          <table class="rouge-table">
             <tbody>
-               <tr style="background-color: 151515:">
+               <tr style="background-color: 151515;">
                   <td class="rouge-gutter gl">
                      <pre class="lineno">1
 2
@@ -389,7 +389,7 @@ image: ../assets/images/posts/logos/thehackerslabs.png
 ---
 ## Resumen de la resolución
 
-**Token Of Hate** es una máquina **Linux** de dificultad <strong style="color: darkred">Insane</strong> (**Experto**) de la plataforma de **TheHackersLabs**. Es una máquina que explota diversas vulnerabilidades web, veremos como conseguiremos robarle la cookie al admin lo que nos permite acceder a la sección de administración, en la cual podemos generar archivos **PDFs**. Dicha generación de archivos **PDFs**, nos permitirán explotar un SSRF para acceder a una **API** interna a través de la cual podemos ejecutar comandos remotamente. Finalmente, aprovechamos una capability en una copia del binario **node** para escalar privilegios y obtener acceso como **root**.
+**Token Of Hate** es una máquina **Linux** de dificultad <strong style="color: #8B0000">Insane</strong> (**Experto**) de la plataforma de **TheHackersLabs**. Es una máquina que explota diversas vulnerabilidades web, veremos como conseguiremos robarle la cookie al admin lo que nos permite acceder a la sección de administración, en la cual podemos generar archivos **PDFs**. Dicha generación de archivos **PDFs**, nos permitirán explotar un SSRF para acceder a una **API** interna a través de la cual podemos ejecutar comandos remotamente. Finalmente, aprovechamos una capability en una copia del binario **node** para escalar privilegios y obtener acceso como **root**.
 
 ---
 ## Enumeración
