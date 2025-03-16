@@ -16,7 +16,7 @@ Test
 ---
 ## Resumen de la resolución
 
-**Token Of Hate** es una máquina **Linux** de dificultad <strong style="color: darkred">Insane</strong> (**Experto**) de la plataforma de **TheHackersLabs**. Es una máquina que explota diversas vulnerabilidades web, veremos como conseguiremos robarle la cookie al admin lo que nos permite acceder a la sección de administración, en la cual podemos generar archivos **PDFs**. Dicha generación de archivos **PDFs**, nos permitirán explotar un SSRF para acceder a una **API** interna a través de la cual podemos ejecutar comandos remotamente. Finalmente, aprovechamos una capability en una copia del binario **node** para escalar privilegios y obtener acceso como **root**.
+**Token Of Hate** es una máquina **Linux** de dificultad Insane (**Experto**) de la plataforma de **TheHackersLabs**. Es una máquina que explota diversas vulnerabilidades web, veremos como conseguiremos robarle la cookie al admin lo que nos permite acceder a la sección de administración, en la cual podemos generar archivos **PDFs**. Dicha generación de archivos **PDFs**, nos permitirán explotar un SSRF para acceder a una **API** interna a través de la cual podemos ejecutar comandos remotamente. Finalmente, aprovechamos una capability en una copia del binario **node** para escalar privilegios y obtener acceso como **root**.
 
 ---
 ## Enumeración
