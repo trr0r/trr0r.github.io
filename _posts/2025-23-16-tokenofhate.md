@@ -1,5 +1,5 @@
 ---
-title: "TheHackersLabs"
+title: "Token Of Hate"
 date: 2025-03-16 00:00:00 +0800
 categories: writeups thehackerslabs
 tags: autopwn máquina linux cookiehijacking jwt capabilities rce xss ssrf lfi javascript scripting apiabuse api
