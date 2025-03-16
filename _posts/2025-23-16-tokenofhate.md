@@ -20,7 +20,7 @@ image: ../assets/images/posts/logos/thehackerslabs.png
       <code>
          <table class="rouge-table">
             <tbody>
-               <tr style="background-color: 151515;">
+               <tr style="background-color: #151515;">
                   <td class="rouge-gutter gl">
                      <pre class="lineno">1
 2
