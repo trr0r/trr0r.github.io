@@ -60,6 +60,7 @@ nmap -p80,22 -sCV 192.168.26.92 -oN targeted
 En el segundo escaneo de **Nmap** no descubriremos nada interesante.
 
 ![](<../assets/images/posts/2025-23-16-tokenofhate/Pasted image 20250315113305.png>)
+
 ___
 ### Puerto 80 - HTTP (Apache)
 
@@ -87,6 +88,7 @@ Como bien hemos visto antes, el usuario **admin** está revisando los nuevos usu
 Veremos como recibimos una petición al archivo `pwned.js`.
 
 ![](<../assets/images/posts/2025-23-16-tokenofhate/Pasted image 20250315181718.png>)
+
 ___
 ## Explotación
 ### XSS → Cookie Hijacking
