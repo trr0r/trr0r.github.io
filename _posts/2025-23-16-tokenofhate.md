@@ -9,8 +9,19 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
 ## Autopwned
 
 <details>
-  <summary>Haz click para ver el autopwned</summary>
-    <div class="language-python highlighter-rouge"><div class="code-header"> <span data-label-text="Python"><i class="fas fa-code fa-fw small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+    <summary>Click para ver el autopwned</summary>
+<div class="language-python highlighter-rouge">
+   <div class="code-header">
+      <span data-label-text="Python"><i class="fas fa-code fa-fw small"></i></span>
+      <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button>
+   </div>
+   <div class="highlight">
+      <code>
+         <table class="rouge-table">
+            <tbody>
+               <tr style="background-color: 151515:">
+                  <td class="rouge-gutter gl">
+                     <pre class="lineno">1
 2
 3
 4
@@ -186,7 +197,10 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
 174
 175
 176
-</pre></td><td class="rouge-code"><pre> <span class="c1">#!/usr/bin/env python3
+</pre>
+                  </td>
+                  <td class="rouge-code">
+                     <pre><span class="c1">#!/usr/bin/env python3
 </span>
 <span class="c1"># Author: Álvaro Bernal (aka. trr0r)
 </span>
@@ -362,13 +376,19 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
     <span class="n">token</span> <span class="o">=</span> <span class="nf">run_flask_token</span><span class="p">()</span>
     <span class="nf">write_pwned_js</span><span class="p">(</span><span class="n">payload_cmd</span><span class="p">,</span> <span class="sh">"</span><span class="s">c</span><span class="sh">"</span><span class="p">)</span>
     <span class="nf">run_flask_cmd</span><span class="p">()</span>
-</pre></td></tr></tbody></table></code></div></div>
+</pre>
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+      </code>
+   </div>
+</div>
 </details>
-
 ---
 ## Resumen de la resolución
 
-**Token Of Hate** es una máquina **Linux** de dificultad **Insane (Experto)** de la plataforma de **TheHackersLabs**. Es una máquina que explota diversas vulnerabilidades web, veremos como conseguiremos robarle la cookie al admin lo que nos permite acceder a la sección de administración, en la cual podemos generar archivos **PDFs**. Dicha generación de archivos **PDFs**, nos permitirán explotar un SSRF para acceder a una **API** interna a través de la cual podemos ejecutar comandos remotamente. Finalmente, aprovechamos una capability en una copia del binario **node** para escalar privilegios y obtener acceso como **root**.
+**Token Of Hate** es una máquina **Linux** de dificultad <strong style="color: darkred">Insane</strong> (**Experto**) de la plataforma de **TheHackersLabs**. Es una máquina que explota diversas vulnerabilidades web, veremos como conseguiremos robarle la cookie al admin lo que nos permite acceder a la sección de administración, en la cual podemos generar archivos **PDFs**. Dicha generación de archivos **PDFs**, nos permitirán explotar un SSRF para acceder a una **API** interna a través de la cual podemos ejecutar comandos remotamente. Finalmente, aprovechamos una capability en una copia del binario **node** para escalar privilegios y obtener acceso como **root**.
 
 ---
 ## Enumeración
