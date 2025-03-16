@@ -10,9 +10,11 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
 
 <details>
   <summary>Haz click para ver el autopwned</summary>
- <pre><code class="language-python">
-  print("Hello")
-  </code></pre>
+ </details>
+ ```python
+ print("Hello World")
+ ```
+<details>
 </details>
 
 ---
