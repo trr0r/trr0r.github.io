@@ -3,7 +3,7 @@ title: "NeoMarket"
 date: 2025-03-19 21:36:14 +0100
 categories: writeups bugbountylabs
 tags: máquina linux inyecciónsql rce mine
-description: Writeup de la máquina NeoMarket de Bugbountylabs.
+description: Writeup de la máquina NeoMarket de BugBountyLabs.
 image: ../assets/images/posts/logos/bugbountylabs.jpeg
 ---
 ## Resumen de la resolución
