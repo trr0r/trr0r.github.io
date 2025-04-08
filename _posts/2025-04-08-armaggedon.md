@@ -102,8 +102,8 @@ wget https://raw.githubusercontent.com/pimps/CVE-2018-7600/refs/heads/master/dru
 
 > Si nos da un error de que no encuentra una librería activaremos el entorno temporal que recientemente hemos creado e instalaremos la librería necesaria en este caso **bs4**, es decir ejecutaremos lo siguiente:
 > 
-	source .venv/bin/activate
-	pip3 install bs4
+>	source .venv/bin/activate`
+>	`pip3 install bs4`
 
 Al ejecutar dicho script observaremos como este si que funciona, pues nos está devolviendo el **output** del comando `whoami`.
 
