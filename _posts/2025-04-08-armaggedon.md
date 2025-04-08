@@ -19,6 +19,7 @@ Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquin
 ![](<../assets/images/posts/2025-04-08-armageddon/Pasted image 20241224165652.png>)
 
 > El motivo por el cual el **TTL** es de **63** es porque el paquete pasa por unos intermediarios (routers) antes de llegar a su destino (máquina atacante). Esto podemos comprobarlo con el comando `ping -c 1 -R 10.10.10.233`.
+
 ### Nmap
 
 En segundo lugar, realizaremos un escaneo usando **Nmap** para ver que puertos de la máquina víctima se encuentra abiertos.
@@ -101,8 +102,10 @@ wget https://raw.githubusercontent.com/pimps/CVE-2018-7600/refs/heads/master/dru
 
 > Si nos da un error de que no encuentra una librería activaremos el entorno temporal que recientemente hemos creado e instalaremos la librería necesaria en este caso **bs4**, es decir ejecutaremos lo siguiente:
 > 
-	`source .venv/bin/activate`
-	`pip3 install bs4`
+	```bash
+	source .venv/bin/activate
+	pip3 install bs4
+	```
 
 Al ejecutar dicho script observaremos como este si que funciona, pues nos está devolviendo el **output** del comando `whoami`.
 
