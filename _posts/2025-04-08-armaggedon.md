@@ -190,7 +190,7 @@ Una vez llegado a este punto realizaremos las mismas comprobaciones de siempre p
 
 ![](<../assets/images/posts/2025-04-08-armageddon/Pasted image 20241224180717.png>)
 
-Si nos dirigimos a la página de **GTFO-Bins](https://gtfobins.github.io/gtfobins/snap/#sudo) nos daremos cuenta como podemos abusar de este permiso de [Sudoers** para elevar nuestros privilegios.
+Si nos dirigimos a la página de [GTFO-Bins](https://gtfobins.github.io/gtfobins/snap/#sudo) nos daremos cuenta como podemos abusar de este permiso de **Sudoers** para elevar nuestros privilegios.
 
 En definitiva lo que debemos de hacer es crear un paquete malicioso de **snap** en nuestra máquina víctima, para ello ejecutaremos los siguiente comandos:
 
