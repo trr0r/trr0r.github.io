@@ -12,6 +12,20 @@ image: ../assets/images/posts/logos/breach-ctf.png
 
 This writeup walks through the challenge **Catering The Food** from the [Breach CTF](https://ctf.breachers.in/). It is intended for **beginners** and includes detailed descriptions of each step, along with commentary for every screenshot. I believe the proposed solution is not the intended path for the challenge, but exploring alternative exploitation techniques is **valuable**, as it broadens our understanding and reveals a range of **potential attack vectors**.
 
+---
+## Challenge Description
+
+Embark on an extraordinary journey to etch your name in history as the most legendary caterer the world has ever known.
+
+```
+input: 99999 99999 99999 
+output: 173977761
+```
+
+> author: DustOfSnow
+
+[https://ppc-ctf.challs.breachers.in](https://ppc-ctf.challs.breachers.in/)
+
 ___
 ### Request Bin
 
