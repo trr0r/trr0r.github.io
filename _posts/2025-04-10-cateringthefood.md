@@ -50,7 +50,7 @@ The previously written code will be pasted into the website, which provides an e
 Shortly after, a GET request will be triggered and received at the previously created RequestBin endpoint (public URL).
 
 ![](<../assets/images/posts/2025-04-10-cateringthefood/Pasted image 20250406203348.png>)
-### Script to receive the output of the commands
+### Script to receive commands' output
 
 This stage of the challenge becomes more **complex**. Previously, it was enough to confirm that the target system was susceptible to **remote command execution**. Now, however, we need to ensure we can execute **arbitrary commands reliably**. To facilitate this and minimize potential errors, we’ll implement two helper functions that will **streamline** the command injection process and improve flexibility:
 
