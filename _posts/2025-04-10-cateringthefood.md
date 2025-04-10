@@ -8,7 +8,7 @@ image: ../assets/images/posts/logos/breach-ctf.png
 ---
 ## Introduction
 
-**Author**: Álvaro Bernal (aka. **trr0r**)
+#### **Author**: Álvaro Bernal (aka. **trr0r**)
 
 This writeup walks through the challenge **Catering The Food** from the [Breach CTF](https://ctf.breachers.in/). It is intended for **beginners** and includes detailed descriptions of each step, along with commentary for every screenshot. I believe the proposed solution is not the intended path for the challenge, but exploring alternative exploitation techniques is **valuable**, as it broadens our understanding and reveals a range of **potential attack vectors**.
 
