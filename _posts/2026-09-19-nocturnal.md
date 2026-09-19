@@ -162,7 +162,7 @@ ___
 ![](<../assets/images/posts/2026-09-19-nocturnal/Pasted image 20250414134135.png>)
 ### Cracking Hash
 
-[Crackstation](crackstation.net) o [Hashes](hashes.com)
+[Crackstation](https://crackstation.net) o [Hashes](https://hashes.com)
 
 **tobias:slowmotionapocalypse**
 
