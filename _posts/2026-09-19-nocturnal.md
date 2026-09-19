@@ -1,6 +1,7 @@
 ---
 title: "Nocturnal"
 date: 2026-09-19 14:17:31 +0200
+published: false
 categories: writeups HackTheBox
 tags: máquina linux fuerzabruta cve infoleak criptografía ispconfig commandinjection
 description: Writeup de la máquina Nocturnal de Hackthebox.
