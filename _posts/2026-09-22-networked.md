@@ -123,7 +123,7 @@ tal y como habíamos visto en upload.php sabemos que se sube en uploads
 
 es muy raro que esto vaya y porque pasa esto
 #### ¿ Porque Funciona ?
-I was very confused at this point. It turns out this is a configuration error in how the web server is deciding what to execute as code as opposed to return a static file or an image. Details are **here](https://blog.remirepo.net/post/2013/01/13/PHP-and-Apache-SetHandler-vs-AddHandler). The standard case is that php will only process files ending in `.php`. The configuration error here means that as long as `.php` is somewhere in the name it will process as php. I’ll look into the configuration a bit more in despues en [Más allá del Root**
+I was very confused at this point. It turns out this is a configuration error in how the web server is deciding what to execute as code as opposed to return a static file or an image. Details are **[here](https://blog.remirepo.net/post/2013/01/13/PHP-and-Apache-SetHandler-vs-AddHandler). The standard case is that php will only process files ending in `.php`. The configuration error here means that as long as `.php` is somewhere in the name it will process as php. I’ll look into the configuration a bit more in despues en [Más allá del Root](#más-allá-del-root)**
 
 ![](<../assets/images/posts/2026-09-22-networked/Pasted image 20250127125834.png>)
 
