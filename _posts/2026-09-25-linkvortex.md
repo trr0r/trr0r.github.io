@@ -1,6 +1,7 @@
 ---
 title: "LinkVortex"
 date: 2026-09-25 15:15:58 +0200
+published: false
 categories: writeups HackTheBox
 tags: máquina linux infoleak cve ghost lfi
 description: Writeup de la máquina LinkVortex de Hackthebox.
