@@ -97,7 +97,7 @@ Debemos de tener en cuenta que los binarios encargados de transformar imágenes 
 
 ![](<../assets/images/posts/2026-10-06-pilgrimage/Pasted image 20250103162737.png>)
 
-Buscando en internet por exploits relacionados con esta versión nos encontraremos con el siguiente **repositorio](https://github.com/entr0pie/CVE-2022-44268) el cual contiene un exploit el cual nos permite leer archivos internos del sistema (**Arbitrary File Read**), es decir algo similar a un [LFI**.
+Buscando en internet por exploits relacionados con esta versión nos encontraremos con el siguiente **[repositorio](https://github.com/entr0pie/CVE-2022-44268) el cual contiene un exploit el cual nos permite leer archivos internos del sistema (**Arbitrary File Read**), es decir algo similar a un [LFI**.
 
 Nos clonaremos el repositorio con la siguiente instrucción:
 
